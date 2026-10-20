@@ -1,0 +1,6 @@
+/* Skriftene ligger i prosjektet, så alt fungerer uten nett i klasserommet.
+   Bare latin-utvalget (dekker æ, ø og å). Begge er lisensiert under SIL Open Font License, se fonter/. */
+@font-face { font-family: 'IBM Plex Sans'; font-style: normal; font-display: swap; font-weight: 400; src: url(./fonter/ibm-plex-sans-latin-400-normal.woff2) format('woff2'); }
+@font-face { font-family: 'IBM Plex Sans'; font-style: normal; font-display: swap; font-weight: 600; src: url(./fonter/ibm-plex-sans-latin-600-normal.woff2) format('woff2'); }
+@font-face { font-family: 'IBM Plex Sans'; font-style: normal; font-display: swap; font-weight: 700; src: url(./fonter/ibm-plex-sans-latin-700-normal.woff2) format('woff2'); }
+@font-face { font-family: 'Fraunces'; font-style: normal; font-display: swap; font-weight: 700; src: url(./fonter/fraunces-latin-700-normal.woff2) format('woff2'); }
