@@ -25,9 +25,11 @@ export const Tittel: React.FC = () => (
       />
       <div className="stack">
         <div className="boxed math big">
-          <Poly a={2} b={-2} c={-12} />
-          <Op>=</Op>
-          <Factored a={2} r1={3} r2={-2} />
+          <Poly a={2} b={-2} c={-12} />{' '}
+          <span className="nw">
+            <Op>=</Op>
+            <Factored a={2} r1={3} r2={-2} />
+          </span>
         </div>
         <p>
           Grafen skjærer <X />
