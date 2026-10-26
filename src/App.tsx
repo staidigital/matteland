@@ -4,6 +4,7 @@ import Home from './pages/Home.tsx'
 import NotFound from './pages/NotFound.tsx'
 import Matematikk1T from './pages/1t/Matematikk1T.tsx'
 import Nullpunktsfaktorisering from './pages/1t/nullpunktsfaktorisering/Nullpunktsfaktorisering.tsx'
+import Funksjoner from './pages/1t/funksjoner/Funksjoner.tsx'
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
       </Route>
       {/* Presentasjoner bruker hele skjermen og har sin egen kontrollinje */}
       <Route path="1t/nullpunktsfaktorisering" element={<Nullpunktsfaktorisering />} />
+      <Route path="1t/funksjoner" element={<Funksjoner />} />
     </Routes>
   )
 }

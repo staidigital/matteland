@@ -1,6 +1,9 @@
 import { Link } from 'react-router-dom'
 
-const temaer = [{ path: 'nullpunktsfaktorisering', tittel: 'Nullpunktsfaktorisering' }]
+const temaer = [
+  { path: 'nullpunktsfaktorisering', tittel: 'Nullpunktsfaktorisering' },
+  { path: 'funksjoner', tittel: 'Funksjonsbegrepet' },
+]
 
 export default function Matematikk1T() {
   return (
