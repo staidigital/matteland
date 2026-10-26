@@ -73,3 +73,11 @@ a {
 .link-list a {
   font-size: 1.25rem;
 }
+
+.inndeling + .inndeling {
+  margin-top: 2rem;
+}
+
+.inndeling h2 {
+  margin-bottom: 0.75rem;
+}
