@@ -7,7 +7,11 @@ const inndelinger = [
   },
   {
     tittel: 'Funksjoner',
-    temaer: [{ path: 'funksjoner', tittel: 'Funksjonsbegrepet' }],
+    temaer: [
+      { path: 'funksjoner', tittel: 'Funksjonsbegrepet' },
+      { path: 'skjaeringspunkter', tittel: 'Skjæringspunkter' },
+      { path: 'lineare-funksjoner', tittel: 'Lineære funksjoner' },
+    ],
   },
 ]
 
