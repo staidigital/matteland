@@ -11,6 +11,7 @@ const inndelinger = [
       { path: 'funksjoner', tittel: 'Funksjonsbegrepet' },
       { path: 'skjaeringspunkter', tittel: 'Skjæringspunkter' },
       { path: 'lineare-funksjoner', tittel: 'Lineære funksjoner' },
+      { path: 'polynomfunksjoner', tittel: 'Polynomfunksjoner' },
     ],
   },
 ]
