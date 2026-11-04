@@ -1,13 +1,21 @@
-import { Link } from 'react-router-dom'
+import Kort from '../components/Kort.tsx'
+import { antallPresentasjoner } from './1t/Matematikk1T.tsx'
 
 export default function Home() {
   return (
     <section className="home">
+      <div className="kicker">Undervisningsmateriell i matematikk</div>
       <h1>Matteland</h1>
-      <nav>
-        <ul className="link-list">
+      <p className="lede">Interaktive presentasjoner, oppgaver og formler til bruk i timen og hjemme.</p>
+      <nav aria-label="Fag">
+        <ul className="kort-liste">
           <li>
-            <Link to="/1t">Matematikk 1T</Link>
+            <Kort
+              til="/1t"
+              tittel="Matematikk 1T"
+              tekst="Fra tallmengder og brøk til funksjoner og polynomer."
+              fot={`${antallPresentasjoner} presentasjoner og puggeliste`}
+            />
           </li>
         </ul>
       </nav>

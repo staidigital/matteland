@@ -35,10 +35,42 @@ export const Presentasjon: React.FC<Props> = ({ lysbilder: LYSBILDER, tilbake })
     stage.current?.scrollTo(0, 0);
   }, [SISTE]);
 
-  // → viser først neste steg på lysbildet, deretter neste lysbilde
+  // Nytt innhold (steg, fasit, tilbakemelding) kan havne under kanten: rull det inn i synsfeltet
+  useEffect(() => {
+    const el = stage.current;
+    if (!el) return;
+    const observer = new MutationObserver((endringer) => {
+      const nye = endringer
+        .flatMap((e) => Array.from(e.addedNodes))
+        .filter((n): n is HTMLElement => n instanceof HTMLElement && !n.classList.contains('slide'));
+      if (nye.length === 0) return;
+      const ramme = el.getBoundingClientRect();
+      const topp = Math.min(...nye.map((n) => n.getBoundingClientRect().top));
+      const bunn = Math.max(...nye.map((n) => n.getBoundingClientRect().bottom));
+      const luft = 24;
+      if (bunn + luft <= ramme.bottom) return;
+      const nok = bunn + luft - ramme.bottom;
+      const maks = el.scrollHeight - el.clientHeight - el.scrollTop;
+      // Tar med knappene rett under hvis det bare mangler litt
+      const onsket = maks - nok <= 96 ? maks : nok;
+      // Rull aldri så langt at toppen av det nye forsvinner
+      const avstand = Math.min(onsket, topp - ramme.top - luft);
+      if (avstand <= 0) return;
+      const rolig = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      el.scrollBy({ top: avstand, behavior: rolig ? 'auto' : 'smooth' });
+    });
+    observer.observe(el, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+
+  // → viser først neste steg, ruller så ned til det som er skjult, og går deretter til neste lysbilde
   const next = useCallback(() => {
+    const el = stage.current;
     if (frag < LYSBILDER[i].steg) setFrag(frag + 1);
-    else go(i + 1);
+    else if (el && el.scrollHeight - el.clientHeight - el.scrollTop > 4) {
+      const rolig = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      el.scrollBy({ top: el.clientHeight * 0.85, behavior: rolig ? 'auto' : 'smooth' });
+    } else go(i + 1);
   }, [LYSBILDER, i, frag, go]);
 
   // ← går ett steg tilbake; fra steg 0 til forrige lysbilde med alle steg vist
@@ -138,7 +170,7 @@ export const Presentasjon: React.FC<Props> = ({ lysbilder: LYSBILDER, tilbake })
           <div>
             <table>
               <tbody>
-                <tr><td>→ · mellomrom · PageDown</td><td>Neste steg eller lysbilde</td></tr>
+                <tr><td>→ · mellomrom · PageDown</td><td>Neste steg, rull ned eller neste lysbilde</td></tr>
                 <tr><td>← · PageUp</td><td>Forrige steg eller lysbilde</td></tr>
                 <tr><td>N</td><td>Vis/skjul lærernotat</td></tr>
                 <tr><td>F</td><td>Fullskjerm</td></tr>
@@ -161,7 +193,6 @@ export const Presentasjon: React.FC<Props> = ({ lysbilder: LYSBILDER, tilbake })
         <span className="count">
           {i + 1} / {LYSBILDER.length}
         </span>
-        <span className="navtitle">{L.tittel}</span>
         <div className="dots">
           {LYSBILDER.map((s, k) => (
             <button key={k} aria-label={s.tittel} title={`${k + 1}. ${s.tittel}`} aria-current={k === i} onClick={() => go(k)} />
@@ -169,6 +200,9 @@ export const Presentasjon: React.FC<Props> = ({ lysbilder: LYSBILDER, tilbake })
         </div>
         <button className={'btn' + (notat ? ' on' : '')} onClick={() => setNotat((v) => !v)} title="Lærernotat (N)">
           Notat
+        </button>
+        <button className="btn" onClick={byttTema} title="Bytt tema (T)" aria-label="Bytt mellom lyst og mørkt tema">
+          ◐
         </button>
         <button className="btn" onClick={fullskjerm} title="Fullskjerm (F)">
           ⛶

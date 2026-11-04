@@ -175,7 +175,7 @@ export default function Formler() {
           </div>
           <div className="row skjul-utskrift">
             <Link className="btn" to="/1t">
-              ← Tilbake
+              ← 1T
             </Link>
             <button className="btn" onClick={() => window.print()}>
               Skriv ut

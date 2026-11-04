@@ -1,24 +1,8 @@
 :root {
-  --bg: #ffffff;
-  --text: #1f2328;
-  --muted: #59636e;
-  --accent: #2f6fdb;
-  --border: #d1d9e0;
-
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--f-body);
   line-height: 1.5;
-  color: var(--text);
-  background: var(--bg);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0d1117;
-    --text: #e6edf3;
-    --muted: #9198a1;
-    --accent: #6ea8fe;
-    --border: #30363d;
-  }
+  color: var(--ink);
+  background: var(--paper);
 }
 
 * {
@@ -28,56 +12,151 @@
 body {
   margin: 0;
   min-height: 100vh;
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 28px 28px;
 }
 
 a {
-  color: var(--accent);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 3px solid var(--pen);
+  outline-offset: 2px;
 }
 
 .site-header {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--border);
+  padding: 1rem max(16px, 3vw);
+  border-bottom: 1px solid var(--line);
+  background: var(--navbg);
 }
 
 .logo {
+  font-family: var(--f-display);
   font-weight: 700;
   font-size: 1.25rem;
   text-decoration: none;
-  color: var(--text);
 }
 
 .site-main {
-  max-width: 960px;
+  max-width: 1140px;
   margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: clamp(24px, 5vh, 56px) max(16px, 3vw) clamp(40px, 8vh, 80px);
+}
+
+.site-main h1,
+.site-main h2 {
+  font-family: var(--f-display);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+  margin: 0;
+}
+
+.site-main h1 {
+  font-size: clamp(2.6rem, 7vw, 5.6rem);
+}
+
+.site-main h2 {
+  font-size: clamp(1.4rem, 2.4vw, 1.9rem);
+}
+
+.site-main .kicker {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.site-main .lede {
+  font-size: 1.2rem;
+  color: var(--muted);
+  max-width: 62ch;
+  margin: 14px 0 0;
 }
 
 .home {
-  text-align: center;
-  padding-top: 15vh;
+  padding-top: clamp(16px, 10vh, 96px);
 }
 
-.home h1 {
-  font-size: clamp(2.5rem, 8vw, 4.5rem);
-  margin-bottom: 1.5rem;
-}
-
-.link-list {
-  list-style: none;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.link-list a {
-  font-size: 1.25rem;
-}
-
-.inndeling + .inndeling {
-  margin-top: 2rem;
+.inndeling,
+.home .kort-liste {
+  margin-top: clamp(28px, 5vh, 44px);
 }
 
 .inndeling h2 {
-  margin-bottom: 0.75rem;
+  margin-bottom: 14px;
+}
+
+.kort-liste {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+  gap: 14px;
+}
+
+.kort {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 18px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  text-decoration: none;
+  transition: border-color 0.15s ease;
+}
+
+.kort:hover {
+  border-color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kort {
+    transition: none;
+  }
+}
+
+.kort-tittel {
+  font-family: var(--f-display);
+  font-weight: 700;
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+
+.kort-tekst {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.kort-fot {
+  margin-top: auto;
+  padding-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.kort-fot span:last-child {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.kort.fremhevet {
+  border: 2.5px solid var(--pen);
+}
+
+.kort.fremhevet .kort-tittel {
+  color: var(--pen);
+}
+
+.puggeliste {
+  margin-top: clamp(24px, 4vh, 36px);
 }

@@ -1,0 +1,28 @@
+/* Farger og skrifter for hele Matteland. Rutepapir i lys modus, tavle i mørk modus.
+   Følger systemet, men en presentasjon kan overstyre med data-theme (T-tasten). */
+:root,
+.presentasjon[data-theme='light'] {
+  --paper: #f4f7fb; --grid: #dde6f1; --ink: #15223d; --muted: #56667f; --pen: #c3342a;
+  --r1: #16789a; --r2: #b8620e; --card: #ffffff; --line: #c8d4e5; --curve: #15223d;
+  --ok: #23784a; --bad: #b3261e; --hl: #ffefa8; --navbg: rgba(244, 247, 251, 0.94);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #18221f; --grid: #223029; --ink: #e8eee6; --muted: #9db0a6; --pen: #f1cc5e;
+    --r1: #6fcbe3; --r2: #f5a45e; --card: #1f2b27; --line: #34453f; --curve: #e8eee6;
+    --ok: #7dd49c; --bad: #ff8f85; --hl: #4b4520; --navbg: rgba(24, 34, 31, 0.94);
+    color-scheme: dark;
+  }
+}
+.presentasjon[data-theme='dark'] {
+  --paper: #18221f; --grid: #223029; --ink: #e8eee6; --muted: #9db0a6; --pen: #f1cc5e;
+  --r1: #6fcbe3; --r2: #f5a45e; --card: #1f2b27; --line: #34453f; --curve: #e8eee6;
+  --ok: #7dd49c; --bad: #ff8f85; --hl: #4b4520; --navbg: rgba(24, 34, 31, 0.94);
+  color-scheme: dark;
+}
+:root {
+  --f-display: 'Fraunces', Georgia, serif;
+  --f-body: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  --f-math: 'STIX Two Text', 'STIX Two Math', 'Cambria Math', 'Times New Roman', serif;
+}

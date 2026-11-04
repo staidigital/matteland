@@ -86,6 +86,13 @@ export const Num: React.FC<{ v: number; plain?: boolean }> = ({ v, plain }) => {
   );
 };
 
+/** Kvadratrot med strek over, og n-te rot når n er satt: √a og ⁿ√a */
+export const Rot: React.FC<{ n?: React.ReactNode; children: React.ReactNode }> = ({ n, children }) => (
+  <span className="nw">
+    {n !== undefined && <sup>{n}</sup>}√<span className="rad">{children}</span>
+  </span>
+);
+
 /** ax² + bx + c med riktige fortegn, uten 1-ere og uten nulledd. */
 export const Poly: React.FC<{ a: number; b: number; c: number }> = ({ a, b, c }) => {
   const terms = ([[a, 2], [b, 1], [c, 0]] as const).filter(([k]) => Math.abs(k) > EPS);

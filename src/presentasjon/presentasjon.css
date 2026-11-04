@@ -1,30 +1,7 @@
 /* Rutepapir i lys modus, tavle i mørk modus. Viktige resultater får en "rød penn"-ramme.
    Ett lysbilde om gangen, kontrollinje nederst.
    Alt er avgrenset til .presentasjon, så stilene ikke lekker ut i resten av Matteland. */
-.presentasjon {
-  --paper: #f4f7fb; --grid: #dde6f1; --ink: #15223d; --muted: #56667f; --pen: #c3342a;
-  --r1: #16789a; --r2: #b8620e; --card: #ffffff; --line: #c8d4e5; --curve: #15223d;
-  --ok: #23784a; --bad: #b3261e; --hl: #ffefa8; --navbg: rgba(244, 247, 251, 0.94);
-  --f-display: 'Fraunces', Georgia, serif;
-  --f-body: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
-  --f-math: 'STIX Two Text', 'STIX Two Math', 'Cambria Math', 'Times New Roman', serif;
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  .presentasjon:not([data-theme='light']) {
-    --paper: #18221f; --grid: #223029; --ink: #e8eee6; --muted: #9db0a6; --pen: #f1cc5e;
-    --r1: #6fcbe3; --r2: #f5a45e; --card: #1f2b27; --line: #34453f; --curve: #e8eee6;
-    --ok: #7dd49c; --bad: #ff8f85; --hl: #4b4520; --navbg: rgba(24, 34, 31, 0.94);
-    color-scheme: dark;
-  }
-}
-.presentasjon[data-theme='dark'] {
-  --paper: #18221f; --grid: #223029; --ink: #e8eee6; --muted: #9db0a6; --pen: #f1cc5e;
-  --r1: #6fcbe3; --r2: #f5a45e; --card: #1f2b27; --line: #34453f; --curve: #e8eee6;
-  --ok: #7dd49c; --bad: #ff8f85; --hl: #4b4520; --navbg: rgba(24, 34, 31, 0.94);
-  color-scheme: dark;
-}
-
+/* Farger og skrifter ligger i src/tema.css */
 @keyframes enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
 .presentasjon {
@@ -32,7 +9,8 @@
   background-color: var(--paper); color: var(--ink);
   background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
   background-size: 28px 28px;
-  font-family: var(--f-body); font-size: clamp(16px, 1.15vw + 8px, 21px); line-height: 1.5;
+  /* Følger både bredde og høyde, så lave skjermer (f.eks. 720p-projektor) får plass til mer */
+  font-family: var(--f-body); font-size: clamp(16px, min(1.15vw + 8px, 2.4vh), 21px); line-height: 1.5;
 }
 
 /* Alt under her gjelder bare inne i presentasjonen */
@@ -40,11 +18,13 @@
 .stage { flex: 1; overflow-y: auto; padding: clamp(16px, 3vh, 40px) max(16px, 3vw); }
 .slide { max-width: 1140px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; animation: enter 0.35s ease both; }
 @media (prefers-reduced-motion: reduce) { .slide, .reveal { animation: none !important; } }
+.vekt-del { transition: transform 0.35s ease; }
+@media (prefers-reduced-motion: reduce) { .vekt-del { transition: none; } }
 
 .kicker { font-size: 0.78em; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); font-weight: 700; }
 h1, h2 { font-family: var(--f-display); font-weight: 700; letter-spacing: -0.015em; text-wrap: balance; margin: 0; line-height: 1.05; }
-h1 { font-size: clamp(2.6rem, 7vw, 5.6rem); }
-h2 { font-size: clamp(1.7rem, 3.4vw, 2.8rem); }
+h1 { font-size: clamp(2.6rem, min(7vw, 8.3vh), 5.6rem); }
+h2 { font-size: clamp(1.7rem, min(3.4vw, 4.2vh), 2.8rem); }
 h3 { font-family: var(--f-body); font-weight: 700; font-size: 1.1em; margin: 0; }
 p { margin: 0; max-width: 62ch; }
 .lede { font-size: 1.2em; color: var(--muted); }
@@ -180,8 +160,7 @@ kbd { font-family: var(--f-body); font-size: 0.85em; border: 1px solid var(--lin
 .dots button { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--ink); background: transparent; padding: 0; cursor: pointer; }
 .dots button[aria-current='true'] { background: var(--pen); border-color: var(--pen); }
 .count { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.85em; min-width: 4.5em; text-align: center; }
-.navtitle { font-size: 0.85em; font-weight: 700; }
-@media (max-width: 640px) { .dots, .navtitle { display: none; } .nav { justify-content: space-between; } }
+@media (max-width: 640px) { .dots { display: none; } .nav { justify-content: space-between; } }
 
 /* lærernotat og hjelp */
 .notes { position: fixed; right: 16px; bottom: 76px; width: min(420px, calc(100vw - 32px)); background: var(--card); border: 1.5px solid var(--ink); border-radius: 8px; padding: 14px 18px; font-size: 0.85em; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18); z-index: 20; }
