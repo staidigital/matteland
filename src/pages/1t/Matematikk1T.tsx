@@ -14,6 +14,10 @@ const inndelinger = [
       { path: 'polynomfunksjoner', tittel: 'Polynomfunksjoner' },
     ],
   },
+  {
+    tittel: 'Formler',
+    temaer: [{ path: 'formler', tittel: 'Puggeliste' }],
+  },
 ]
 
 export default function Matematikk1T() {

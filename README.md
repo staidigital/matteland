@@ -13,6 +13,7 @@ npm run dev
 - `/` – forside
 - `/1t` – Matematikk 1T
 - `/1t/nullpunktsfaktorisering` – Nullpunktsfaktorisering
+- `/1t/formler` – Puggeliste med formlene elevene skal kunne utenat (utskriftsvennlig)
 
 Sider ligger i `src/pages/`, med én mappe per fag (f.eks. `src/pages/1t/`). Ruter defineres i `src/App.tsx`.
 

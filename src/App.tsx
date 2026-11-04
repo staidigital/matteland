@@ -8,6 +8,7 @@ import Funksjoner from './pages/1t/funksjoner/Funksjoner.tsx'
 import Skjaeringspunkter from './pages/1t/skjaeringspunkter/Skjaeringspunkter.tsx'
 import LineareFunksjoner from './pages/1t/lineare/LineareFunksjoner.tsx'
 import Polynomfunksjoner from './pages/1t/polynomfunksjoner/Polynomfunksjoner.tsx'
+import Formler from './pages/1t/formler/Formler.tsx'
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
       <Route path="1t/skjaeringspunkter" element={<Skjaeringspunkter />} />
       <Route path="1t/lineare-funksjoner" element={<LineareFunksjoner />} />
       <Route path="1t/polynomfunksjoner" element={<Polynomfunksjoner />} />
+      <Route path="1t/formler" element={<Formler />} />
     </Routes>
   )
 }
