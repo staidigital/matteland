@@ -5,6 +5,12 @@ import { LYSBILDER as brokregning } from './brokregning/lysbildeliste'
 import { LYSBILDER as forstegradslikninger } from './forstegradslikninger/lysbildeliste'
 import { LYSBILDER as potenser } from './potenser/lysbildeliste'
 import { LYSBILDER as figurtall } from './figurtall/lysbildeliste'
+import { LYSBILDER as kvadratsetningene } from './kvadratsetningene/lysbildeliste'
+import { LYSBILDER as identiteter } from './identiteter/lysbildeliste'
+import { LYSBILDER as fullstendigKvadrat } from './fullstendigkvadrat/lysbildeliste'
+import { LYSBILDER as andregradslikninger } from './andregradslikninger/lysbildeliste'
+import { LYSBILDER as abcFormelen } from './abcformelen/lysbildeliste'
+import { LYSBILDER as praktiskAndregrad } from './praktiskandregrad/lysbildeliste'
 import { LYSBILDER as nullpunktsfaktorisering } from './nullpunktsfaktorisering/lysbildeliste'
 import { LYSBILDER as funksjoner } from './funksjoner/lysbildeliste'
 import { LYSBILDER as skjaeringspunkter } from './skjaeringspunkter/lysbildeliste'
@@ -54,8 +60,44 @@ const inndelinger = [
     ],
   },
   {
-    tittel: 'Andregradslikninger',
+    tittel: 'Andregradsuttrykk og -likninger',
     temaer: [
+      {
+        path: 'kvadratsetningene',
+        tittel: 'Kvadratsetningene',
+        tekst: 'Tre snarveier for å gange ut parenteser, og for å faktorisere den andre veien.',
+        antall: kvadratsetningene.length,
+      },
+      {
+        path: 'identitet-og-bevis',
+        tittel: 'Identitet og bevis',
+        tekst: 'Noen likheter stemmer for alle tall. Hvordan viser vi det, og hvorfor er ikke eksempler nok?',
+        antall: identiteter.length,
+      },
+      {
+        path: 'fullstendig-kvadrat',
+        tittel: 'Fullstendig kvadrat',
+        tekst: 'Legg til det som mangler, så blir uttrykket et kvadrat vi kan lese av og regne videre med.',
+        antall: fullstendigKvadrat.length,
+      },
+      {
+        path: 'andregradslikninger',
+        tittel: 'Andregradslikninger',
+        tekst: 'Løs med kvadratrot og ±, med produktregelen og faktorisering, og med sum og produkt.',
+        antall: andregradslikninger.length,
+      },
+      {
+        path: 'abc-formelen',
+        tittel: 'abc-formelen',
+        tekst: 'Én formel som løser alle andregradslikninger, og et tall som forteller hvor mange løsninger de har.',
+        antall: abcFormelen.length,
+      },
+      {
+        path: 'praktisk-andregrad',
+        tittel: 'Praktisk bruk av andregradslikninger',
+        tekst: 'Fra tekst til likning: areal, kast og overskudd. Og hvilke svar gir egentlig mening?',
+        antall: praktiskAndregrad.length,
+      },
       {
         path: 'nullpunktsfaktorisering',
         tittel: 'Nullpunktsfaktorisering',

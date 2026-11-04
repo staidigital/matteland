@@ -51,6 +51,44 @@ export const ProvOppgaver: React.FC<LysbildeProps & { oppgaver: ProvOppgave[] }>
   </>
 );
 
+/* ---------- «Vanlige feil» ---------- */
+
+export type Feil = { t: string; oppsett: React.ReactNode; feil: React.ReactNode; riktig: React.ReactNode; hvorfor: React.ReactNode };
+
+/** Tre kort med en typisk feil, der det riktige svaret vises med en knapp eller med → */
+export const FeilListe: React.FC<LysbildeProps & { feil: Feil[] }> = ({ feil, frag, setFrag }) => (
+  <>
+    <div className="traps">
+      {feil.map((k, i) => (
+        <div className="panel stack" key={i} style={{ gap: 10 }}>
+          <h3>{k.t}</h3>
+          <div className="math" style={{ fontSize: '1.1em' }}>
+            {k.oppsett}
+          </div>
+          <div className="math wrong">
+            <span className="tag">Feil</span>
+            {k.feil}
+          </div>
+          {frag > i ? (
+            <>
+              <div className="math right reveal">
+                <span className="tag">Riktig</span>
+                <span style={{ color: 'var(--ink)' }}>{k.riktig}</span>
+              </div>
+              <p className="small reveal">{k.hvorfor}</p>
+            </>
+          ) : (
+            <button className="btn" onClick={() => setFrag(i + 1)} style={{ alignSelf: 'start' }}>
+              Vis riktig
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+    <p className="hintline">Diskuter med sidemannen før du viser svaret.</p>
+  </>
+);
+
 /* ---------- «Øv selv» ---------- */
 
 export type Svar = {

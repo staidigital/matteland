@@ -46,6 +46,13 @@ export const par = (n: number) => (n < 0 ? `(${minus(n)})` : String(n));
 
 export const X = () => <i className="v">x</i>;
 export const V: React.FC<{ c: string }> = ({ c }) => <i className="v">{c}</i>;
+/** x² */
+export const Xk = () => (
+  <>
+    <i className="v">x</i>
+    <sup>2</sup>
+  </>
+);
 export const X1: React.FC<{ farge?: boolean }> = ({ farge }) => (
   <span className={farge ? 'c1' : undefined}>
     <V c="x" />
