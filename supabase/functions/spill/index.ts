@@ -47,13 +47,23 @@ async function nyOppgave(spiller: string, tema: unknown, niva: unknown) {
     return svar(429, { feil: 'Du må vente litt etter et feil svar.', ventTil: status.cooldown_until })
   }
 
-  const oppgave = lagOppgave(tema as Tema, niva as number)
+  // Spørsmålet lagres sammen med fasiten, så spilleren ikke får de samme oppgavene om igjen
+  const { data: tidligere } = await db
+    .from('tasks')
+    .select('sporsmal:answer->>sporsmal')
+    .eq('player_id', spiller)
+    .eq('topic', tema)
+    .eq('level', niva)
+    .order('created_at', { ascending: false })
+    .limit(500)
+  const brukte = (tidligere ?? []).map((rad) => rad.sporsmal as string | null).filter((s): s is string => Boolean(s))
+  const oppgave = lagOppgave(tema as Tema, niva as number, brukte)
 
   // En spiller har bare én åpen oppgave om gangen
   await db.from('tasks').delete().eq('player_id', spiller).is('answered_at', null)
   const { data, error } = await db
     .from('tasks')
-    .insert({ round_id: runde.id, player_id: spiller, topic: tema, level: niva, answer: oppgave.fasit })
+    .insert({ round_id: runde.id, player_id: spiller, topic: tema, level: niva, answer: { ...oppgave.fasit, sporsmal: oppgave.sporsmal } })
     .select('id')
     .single()
   if (error) return rpcSvar(null, error)
@@ -116,8 +126,20 @@ Deno.serve(async (req) => {
       const { data, error } = await db.rpc('moc_fortify', {
         p_player: spiller,
         p_region: innhold.omrade,
-        p_gold: innhold.antall,
+        p_soldiers: innhold.antall,
       })
+      return rpcSvar(data, error)
+    }
+    case 'kjop-soldater': {
+      const { data, error } = await db.rpc('moc_buy_soldiers', { p_player: spiller, p_soldiers: innhold.antall })
+      return rpcSvar(data, error)
+    }
+    case 'nuke': {
+      const { data, error } = await db.rpc('moc_nuke', { p_player: spiller, p_region: innhold.omrade })
+      return rpcSvar(data, error)
+    }
+    case 'missilforsvar': {
+      const { data, error } = await db.rpc('moc_missile_defense', { p_player: spiller, p_region: innhold.omrade })
       return rpcSvar(data, error)
     }
     default:

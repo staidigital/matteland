@@ -299,6 +299,19 @@
   margin-bottom: 0;
 }
 
+.moc-panel input.moc-slider {
+  display: block;
+  padding: 0;
+  background: none;
+  border: 0;
+  accent-color: var(--r1);
+  cursor: pointer;
+}
+
+.moc-panel input.moc-slider:disabled {
+  cursor: not-allowed;
+}
+
 .moc-valg {
   min-width: 0;
   margin: 0 0 12px;
@@ -361,19 +374,6 @@
   margin: 0 0 12px;
 }
 
-.moc-fakta {
-  margin: 0 0 12px;
-  color: var(--muted);
-}
-
-.moc-omradepanel .moc-beskjed {
-  margin: 10px 0 0;
-}
-
-.moc-omradepanel h2 + .moc-beskjed {
-  margin: 0 0 8px;
-}
-
 .moc-stilling,
 .moc-nytt {
   margin: 0;
@@ -393,6 +393,16 @@
 .moc-stilling-navn {
   flex: 1;
   font-weight: 600;
+}
+
+.moc-stilling-lag {
+  flex-basis: 100%;
+  box-sizing: border-box;
+  /* På linje med klannavnet: prikken (14px) pluss mellomrommet (8px) */
+  padding-left: 22px;
+  font-size: 0.85rem;
+  opacity: 0.65;
+  overflow-wrap: anywhere;
 }
 
 .moc-nytt li {
@@ -510,6 +520,264 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Kontrollinja under kartet: send tropper og kjøp fra butikken */
+.moc-panel.moc-kontroll {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px;
+}
+
+.moc-kontroll-info {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 1.4em;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.moc-kontroll-info strong {
+  color: var(--ink);
+}
+
+.moc-kontroll-info .moc-kontroll-nok {
+  color: var(--r1);
+}
+
+.moc-kontroll-avbryt {
+  flex-shrink: 0;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: underline;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.moc-kontroll-rad,
+.moc-kontroll-send,
+.moc-kontroll-butikk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.moc-kontroll-rad {
+  gap: 16px;
+}
+
+.moc-kontroll-send {
+  flex: 1;
+  min-width: 0;
+}
+
+.moc-kontroll-antall {
+  flex-shrink: 0;
+  min-width: 6.5em;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.moc-kontroll .moc-kontroll-knapp {
+  flex-shrink: 0;
+  min-width: 84px;
+  margin: 0;
+  padding: 0 12px;
+}
+
+.moc-kontroll .moc-kontroll-knapp:disabled {
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  opacity: 1;
+}
+
+.moc-ikonknapp {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  width: 44px;
+  padding: 0;
+}
+
+.moc-ikonknapp svg {
+  width: 20px;
+  height: 20px;
+}
+
+.moc-ikonpris {
+  font-size: 0.68rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.moc-panel .moc-kontroll-svar {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* Sikting på kartet */
+.moc-mal {
+  cursor: crosshair;
+}
+
+.moc-mal > path {
+  stroke: #fff;
+  stroke-opacity: 1;
+  stroke-width: 2.5;
+}
+
+.moc-mal:hover > path {
+  stroke-width: 4;
+}
+
+.moc-ikke-mal {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* Området overlapper naboene litt, og det skal ikke skinne gjennom */
+.moc-stengt.moc-ikke-mal {
+  opacity: 1;
+}
+
+.moc-skjold {
+  pointer-events: none;
+  fill: #fff;
+  stroke: #1c2733;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+/* Nuke-animasjonen. Raketten bruker 0,7 sekunder ned, og så kommer smellet. */
+.moc-nuke {
+  pointer-events: none;
+}
+
+.moc-rakett {
+  fill: #1c2733;
+  stroke: #fff;
+  stroke-width: 1.5;
+  animation: moc-rakett-fall 0.7s ease-in both;
+}
+
+.moc-motrakett {
+  fill: #fff;
+  stroke: #1c2733;
+  stroke-width: 2;
+  animation: moc-motrakett-opp 0.4s 0.3s ease-out both;
+}
+
+.moc-blink,
+.moc-blink-liten,
+.moc-sjokkbolge {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.moc-blink {
+  fill: #ffd27a;
+  animation: moc-blink 0.7s 0.7s ease-out both;
+}
+
+.moc-sjokkbolge {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 5;
+  animation: moc-sjokkbolge 0.9s 0.7s ease-out both;
+}
+
+.moc-sopp {
+  fill: #7a3b1e;
+  animation: moc-sopp 1.5s 0.8s ease-out both;
+}
+
+.moc-nuke-tekst {
+  font-size: 24px;
+  font-weight: 800;
+  fill: #fff;
+  paint-order: stroke;
+  stroke: #1c2733;
+  stroke-width: 5px;
+  animation: moc-tekst 1.5s 0.8s ease-out both;
+}
+
+@keyframes moc-rakett-fall {
+  0% { transform: translateY(var(--start)); opacity: 1; }
+  99% { transform: translateY(var(--slutt)); opacity: 1; }
+  100% { transform: translateY(var(--slutt)); opacity: 0; }
+}
+
+@keyframes moc-motrakett-opp {
+  0% { transform: translateY(0); opacity: 1; }
+  99% { transform: translateY(var(--hoyde)); opacity: 1; }
+  100% { transform: translateY(var(--hoyde)); opacity: 0; }
+}
+
+@keyframes moc-blink {
+  0% { transform: scale(0.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+@keyframes moc-sjokkbolge {
+  0% { transform: scale(0.1); opacity: 0.9; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+@keyframes moc-sopp {
+  0% { transform: translateY(20px); opacity: 0; }
+  20% { opacity: 0.95; }
+  70% { opacity: 0.85; }
+  100% { transform: translateY(-14px); opacity: 0; }
+}
+
+@keyframes moc-tekst {
+  0% { opacity: 0; }
+  15%, 75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .moc-rakett,
+  .moc-motrakett,
+  .moc-sopp,
+  .moc-sjokkbolge {
+    display: none;
+  }
+
+  .moc-blink {
+    animation: moc-tekst 1.5s both;
+  }
+
+  .moc-nuke-tekst {
+    animation-delay: 0s;
+  }
+}
+
+@media (max-width: 600px) {
+  .moc-kontroll-rad {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .moc-kontroll-send {
+    flex-basis: 100%;
+  }
+
+  .moc-kontroll-antall {
+    min-width: 5.5em;
+  }
+
+  .moc-kontroll .moc-kontroll-knapp {
+    min-width: 72px;
+  }
+}
+
 @media (max-width: 900px) {
   .moc-spillflate {
     grid-template-columns: minmax(0, 1fr);
@@ -573,6 +841,43 @@
 
 .moc-spiller-valg {
   flex-wrap: wrap;
+}
+
+.moc-admin-varsel {
+  margin: 12px 0 0;
+  color: var(--r2);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.moc-admin-antall {
+  margin: 24px 0 0;
+}
+
+.moc-admin-antall + .moc-spillere {
+  margin-top: 12px;
+}
+
+.moc-spiller-med {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.moc-spiller-med input {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--r1);
+  cursor: pointer;
+}
+
+.moc-spiller-ute .moc-spiller-info {
+  color: var(--muted);
 }
 
 .moc-admin-klan {
