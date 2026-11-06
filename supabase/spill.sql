@@ -182,8 +182,8 @@ begin
 
   if p_correct then
     select clan_id into v_clan from public.players where id = p_player;
-    v_soldiers := case v_task.level when 1 then 6 when 2 then 14 else 28 end;
-    v_gold := case v_task.level when 1 then 3 when 2 then 7 else 14 end;
+    v_soldiers := case v_task.level when 1 then 4 when 2 then 16 else 60 end;
+    v_gold := case v_task.level when 1 then 2 when 2 then 8 else 30 end;
 
     -- Klaner som holder et område med dette temaet, får 50 % ekstra
     select exists (

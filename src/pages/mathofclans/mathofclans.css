@@ -299,6 +299,49 @@
   margin-bottom: 0;
 }
 
+.moc-handling .moc-knapp {
+  width: 100%;
+  margin-top: 0;
+}
+
+.moc-andel-verdi {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.moc-andel-verdi strong {
+  color: var(--ink);
+  font-size: 1.15rem;
+}
+
+.moc-panel input.moc-slider {
+  display: block;
+  padding: 0;
+  background: none;
+  border: 0;
+  accent-color: var(--r1);
+  cursor: pointer;
+}
+
+.moc-panel input.moc-slider:disabled {
+  cursor: not-allowed;
+}
+
+.moc-andel-hint {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.moc-andel-nok {
+  color: var(--r1);
+  font-weight: 600;
+}
+
 .moc-valg {
   min-width: 0;
   margin: 0 0 12px;

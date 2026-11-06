@@ -14,9 +14,9 @@ const TEMAER = [
 ]
 
 const NIVAER = [
-  { niva: 1, navn: 'Lett', soldater: 6, gull: 3 },
-  { niva: 2, navn: 'Middels', soldater: 14, gull: 7 },
-  { niva: 3, navn: 'Vanskelig', soldater: 28, gull: 14 },
+  { niva: 1, navn: 'Lett', soldater: 4, gull: 2 },
+  { niva: 2, navn: 'Middels', soldater: 16, gull: 8 },
+  { niva: 3, navn: 'Vanskelig', soldater: 60, gull: 30 },
 ]
 
 const OMTALE: Record<string, string> = {
@@ -59,6 +59,8 @@ type Props = {
 export default function Spillskjerm({ tilstand, spillerId, handling, settStatus }: Props) {
   const naa = useNaa()
   const [valgt, setValgt] = useState<string | null>(null)
+  // Ligger her og ikke i områdepanelet, så slideren beholder verdien når spilleren velger et nytt område
+  const [andel, setAndel] = useState(50)
 
   const klanId = tilstand.spillere.find((s) => s.id === spillerId)?.clan_id ?? null
   const klan = tilstand.klaner.find((k) => k.id === klanId) ?? null
@@ -121,6 +123,8 @@ export default function Spillskjerm({ tilstand, spillerId, handling, settStatus 
               klanId={klanId}
               kanSpille={kanSpille}
               kanAngripe={angripbare.has(valgt)}
+              andel={andel}
+              settAndel={setAndel}
               handling={handling}
               settStatus={settStatus}
             />
@@ -173,6 +177,8 @@ function Omradepanel({
   klanId,
   kanSpille,
   kanAngripe,
+  andel,
+  settAndel,
   handling,
   settStatus,
 }: {
@@ -181,6 +187,8 @@ function Omradepanel({
   klanId: string | null
   kanSpille: boolean
   kanAngripe: boolean
+  andel: number
+  settAndel: (andel: number) => void
   handling: Handling
   settStatus: (status: Spillerstatus) => void
 }) {
@@ -191,7 +199,10 @@ function Omradepanel({
   const styrke = status ? Math.ceil(status.defenders * omrade.terreng) : 0
   const ressurs = erEgen ? (tilstand.status?.gold ?? 0) : (tilstand.status?.soldiers ?? 0)
 
-  const [antall, setAntall] = useState('')
+  // Rundes opp, så alle prosentverdier gir minst én så lenge spilleren har noe å bruke
+  const antall = Math.ceil((ressurs * andel) / 100)
+  const enhet = erEgen ? 'gull' : antall === 1 ? 'soldat' : 'soldater'
+
   const [melding, setMelding] = useState('')
   const [venter, setVenter] = useState(false)
 
@@ -202,7 +213,7 @@ function Omradepanel({
     const { data, feil } = await handling({
       handling: erEgen ? 'forsterk' : 'angrip',
       omrade: id,
-      antall: Number(antall),
+      antall,
     })
     setVenter(false)
     if (feil || !data) {
@@ -210,7 +221,6 @@ function Omradepanel({
       return
     }
     settStatus(data.status as unknown as Spillerstatus)
-    setAntall('')
     if (erEgen) setMelding('Forsvaret er forsterket.')
     else setMelding(data.erobret ? `Du erobret ${omrade.navn}!` : 'Forsvaret holdt, men de mistet soldater.')
   }
@@ -228,27 +238,32 @@ function Omradepanel({
 
       {kanSpille && (kanAngripe || erEgen) && (
         <form className="moc-handling" onSubmit={utfor}>
-          <label htmlFor="moc-antall">
-            {erEgen ? 'Gull du vil bruke (1 gull = 1 forsvarer)' : `Soldater du sender. Du trenger minst ${styrke + 1} for å erobre.`}
-          </label>
-          <div className="moc-felt-rad">
-            <input
-              id="moc-antall"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={ressurs}
-              required
-              value={antall}
-              onChange={(e) => setAntall(e.target.value)}
-            />
-            <button type="button" className="moc-knapp-liten" onClick={() => setAntall(String(ressurs))}>
-              Alle ({ressurs})
-            </button>
-            <button type="submit" className="moc-knapp moc-knapp-rad" disabled={venter || ressurs < 1}>
-              {erEgen ? 'Forsterk' : 'Angrip'}
-            </button>
+          <label htmlFor="moc-andel">{erEgen ? 'Gull du vil bruke' : 'Soldater du vil sende'}</label>
+          <div className="moc-andel-verdi">
+            <strong>{antall} {enhet}</strong>
+            <span>{andel} % av {ressurs}</span>
           </div>
+          <input
+            id="moc-andel"
+            className="moc-slider"
+            type="range"
+            min={1}
+            max={100}
+            value={andel}
+            disabled={ressurs < 1}
+            aria-valuetext={`${andel} prosent, ${antall} ${enhet}`}
+            onChange={(e) => settAndel(Number(e.target.value))}
+          />
+          <p className={!erEgen && antall > styrke ? 'moc-andel-hint moc-andel-nok' : 'moc-andel-hint'}>
+            {erEgen
+              ? '1 gull = 1 forsvarer'
+              : antall > styrke
+                ? 'Nok til å erobre'
+                : `Du trenger minst ${styrke + 1} for å erobre`}
+          </p>
+          <button type="submit" className="moc-knapp" disabled={venter || ressurs < 1}>
+            {erEgen ? 'Forsterk' : 'Angrip'}
+          </button>
         </form>
       )}
 
