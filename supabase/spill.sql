@@ -124,7 +124,7 @@ begin
     raise exception 'Det er for mange klaner til kartet.' using errcode = 'P0001';
   end if;
 
-  delete from public.rounds;
+  delete from public.rounds where true;
   insert into public.rounds (ends_at)
     values (now() + make_interval(mins => p_minutes))
     returning id into v_round;
