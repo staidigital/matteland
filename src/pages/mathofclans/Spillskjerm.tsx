@@ -73,7 +73,7 @@ export default function Spillskjerm({ tilstand, spillerId, handling, settStatus,
   // Ligger her og ikke i områdepanelet, så slideren beholder verdien når spilleren velger et nytt område
   const [andel, setAndel] = useState(50)
   const [sikter, setSikter] = useState<Vare | null>(null)
-  const [butikkSvar, setButikkSvar] = useState<Tilbakemelding | null>(null)
+  const [svar, setSvar] = useState<Tilbakemelding | null>(null)
   const [kjoper, setKjoper] = useState(false)
   const kartflate = useRef<HTMLDivElement>(null)
 
@@ -113,7 +113,7 @@ export default function Spillskjerm({ tilstand, spillerId, handling, settStatus,
   }, [aktivtSikte])
 
   function velgVare(vare: Vare) {
-    setButikkSvar(null)
+    setSvar(null)
     setSikter(sikter === vare ? null : vare)
     // På mobil ligger butikken under kartet, så spilleren må se kartet for å sikte
     kartflate.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
@@ -121,15 +121,15 @@ export default function Spillskjerm({ tilstand, spillerId, handling, settStatus,
 
   async function kjopSoldater() {
     setKjoper(true)
-    setButikkSvar(null)
+    setSvar(null)
     const { data, feil } = await handling({ handling: 'kjop-soldater', antall: SOLDATPAKKE.soldater })
     setKjoper(false)
     if (feil || !data) {
-      setButikkSvar({ riktig: false, tekst: feil ?? 'Noe gikk galt.' })
+      setSvar({ riktig: false, tekst: feil ?? 'Noe gikk galt.' })
       return
     }
     settStatus(data.status as unknown as Spillerstatus)
-    setButikkSvar({ riktig: true, tekst: `Du kjøpte ${SOLDATPAKKE.soldater} soldater.` })
+    setSvar({ riktig: true, tekst: `Du kjøpte ${SOLDATPAKKE.soldater} soldater for ${SOLDATPAKKE.pris} gull.` })
   }
 
   async function brukVare(vare: Vare, id: string) {
@@ -140,22 +140,25 @@ export default function Spillskjerm({ tilstand, spillerId, handling, settStatus,
     const { data, feil } = await handling({ handling: vare === 'nuke' ? 'nuke' : 'missilforsvar', omrade: id })
     setKjoper(false)
     if (feil || !data) {
-      setButikkSvar({ riktig: false, tekst: feil ?? 'Noe gikk galt.' })
+      setSvar({ riktig: false, tekst: feil ?? 'Noe gikk galt.' })
       return
     }
     settStatus(data.status as unknown as Spillerstatus)
     if (vare === 'missil') {
       void oppdaterForsvar()
-      setButikkSvar({ riktig: true, tekst: `${navn} har nå missilforsvar. Motstanderne kan ikke se det.` })
+      setSvar({ riktig: true, tekst: `${navn} har nå missilforsvar. Motstanderne kan ikke se det.` })
     } else if (data.avskutt) {
-      setButikkSvar({ riktig: false, tekst: `Nuken ble skutt ned over ${navn}. Området hadde missilforsvar!` })
+      setSvar({ riktig: false, tekst: `Nuken ble skutt ned over ${navn}. Området hadde missilforsvar!` })
     } else {
-      setButikkSvar({ riktig: true, tekst: `Treff! ${navn} mistet 80 % av troppene.` })
+      setSvar({ riktig: true, tekst: `Treff! ${navn} mistet 80 % av troppene.` })
     }
   }
 
   function vedValgPaKart(id: string) {
-    if (!aktivtSikte) setValgt(id)
+    if (!aktivtSikte) {
+      setValgt(id)
+      setSvar(null)
+    }
     else if (mal[aktivtSikte].has(id)) void brukVare(aktivtSikte, id)
   }
 
@@ -198,18 +201,6 @@ export default function Spillskjerm({ tilstand, spillerId, handling, settStatus,
 
       <div className="moc-spillflate">
         <div className="moc-kartflate" ref={kartflate}>
-          {aktivtSikte && (
-            <div className="moc-sikte" role="status">
-              <span>
-                {aktivtSikte === 'nuke'
-                  ? 'Klikk på området du vil nuke.'
-                  : 'Klikk på et av områdene dine for å legge missilforsvar der.'}
-              </span>
-              <button type="button" className="moc-knapp-liten" onClick={() => setSikter(null)}>
-                Avbryt
-              </button>
-            </div>
-          )}
           <Kart
             omrader={tilstand.omrader}
             klaner={tilstand.klaner}
@@ -221,19 +212,25 @@ export default function Spillskjerm({ tilstand, spillerId, handling, settStatus,
             effekter={effekter}
             onEffektFerdig={fjernEffekt}
           />
-          {valgt && (
-            <Omradepanel
-              key={valgt}
+          {(kanSpille || valgt) && (
+            <Kontrollinje
               id={valgt}
               tilstand={tilstand}
               klanId={klanId}
               kanSpille={kanSpille}
-              kanAngripe={angripbare.has(valgt)}
-              harForsvar={tilstand.missilforsvar.includes(valgt)}
+              kanAngripe={valgt !== null && angripbare.has(valgt)}
               andel={andel}
               settAndel={setAndel}
               handling={handling}
               settStatus={settStatus}
+              svar={svar}
+              settSvar={setSvar}
+              opptatt={kjoper}
+              sikter={aktivtSikte}
+              avbrytSikte={() => setSikter(null)}
+              kanSikte={{ nuke: mal.nuke.size > 0, missil: mal.missil.size > 0 }}
+              velgVare={velgVare}
+              kjopSoldater={() => void kjopSoldater()}
             />
           )}
         </div>
@@ -247,45 +244,6 @@ export default function Spillskjerm({ tilstand, spillerId, handling, settStatus,
               handling={handling}
               settStatus={settStatus}
             />
-          )}
-
-          {kanSpille && tilstand.status && (
-            <section className="moc-panel">
-              <h2>Bruk gull</h2>
-              <ul className="moc-butikk">
-                <Vareplass
-                  navn={`${SOLDATPAKKE.soldater} ekstra soldater`}
-                  omtale="Dyrt, så dette er for nødstilfeller."
-                  pris={SOLDATPAKKE.pris}
-                  gull={tilstand.status.gold}
-                  sperret={kjoper}
-                  onKjop={() => void kjopSoldater()}
-                />
-                <Vareplass
-                  navn="Nuke"
-                  omtale="Tar 80 % av troppene i et område, hvor som helst på kartet."
-                  pris={PRIS.nuke}
-                  gull={tilstand.status.gold}
-                  sperret={kjoper || mal.nuke.size === 0}
-                  aktiv={aktivtSikte === 'nuke'}
-                  onKjop={() => velgVare('nuke')}
-                />
-                <Vareplass
-                  navn="Missilforsvar"
-                  omtale="Skyter ned én nuke mot et av områdene dine. Bare klanen din ser det."
-                  pris={PRIS.missil}
-                  gull={tilstand.status.gold}
-                  sperret={kjoper || mal.missil.size === 0}
-                  aktiv={aktivtSikte === 'missil'}
-                  onKjop={() => velgVare('missil')}
-                />
-              </ul>
-              {butikkSvar && (
-                <p className={`${butikkSvar.riktig ? 'moc-riktig' : 'moc-feil'} moc-butikk-svar`} role="status">
-                  {butikkSvar.tekst}
-                </p>
-              )}
-            </section>
           )}
 
           <section className="moc-panel">
@@ -320,84 +278,63 @@ export default function Spillskjerm({ tilstand, spillerId, handling, settStatus,
   )
 }
 
-function Vareplass({
-  navn,
-  omtale,
-  pris,
-  gull,
-  sperret,
-  aktiv,
-  onKjop,
-}: {
-  navn: string
-  omtale: string
-  pris: number
-  gull: number
-  sperret: boolean
-  aktiv?: boolean
-  onKjop: () => void
-}) {
-  return (
-    <li>
-      <div>
-        <strong>{navn}</strong>
-        <small>{omtale}</small>
-      </div>
-      <button
-        type="button"
-        className="moc-knapp-liten"
-        aria-label={`${navn}, ${pris} gull`}
-        aria-pressed={aktiv}
-        disabled={sperret || gull < pris}
-        onClick={onKjop}
-      >
-        {pris} gull
-      </button>
-    </li>
-  )
-}
-
-function Omradepanel({
+function Kontrollinje({
   id,
   tilstand,
   klanId,
   kanSpille,
   kanAngripe,
-  harForsvar,
   andel,
   settAndel,
   handling,
   settStatus,
+  svar,
+  settSvar,
+  opptatt,
+  sikter,
+  avbrytSikte,
+  kanSikte,
+  velgVare,
+  kjopSoldater,
 }: {
-  id: string
+  id: string | null
   tilstand: Tilstand
   klanId: string | null
   kanSpille: boolean
   kanAngripe: boolean
-  harForsvar: boolean
   andel: number
   settAndel: (andel: number) => void
   handling: Handling
   settStatus: (status: Spillerstatus) => void
+  svar: Tilbakemelding | null
+  settSvar: (svar: Tilbakemelding | null) => void
+  opptatt: boolean
+  sikter: Vare | null
+  avbrytSikte: () => void
+  kanSikte: Record<Vare, boolean>
+  velgVare: (vare: Vare) => void
+  kjopSoldater: () => void
 }) {
-  const omrade = OMRADER.find((o) => o.id === id)!
-  const status = tilstand.omrader[id]
+  const omrade = OMRADER.find((o) => o.id === id)
+  const status = id ? tilstand.omrader[id] : undefined
   const eier: Klan | undefined = tilstand.klaner.find((k) => k.id === status?.clan_id)
   const erEgen = !!status && status.clan_id === klanId && klanId !== null
-  const styrke = status ? Math.ceil(status.defenders * omrade.terreng) : 0
-  const ressurs = erEgen ? (tilstand.status?.gold ?? 0) : (tilstand.status?.soldiers ?? 0)
+  const styrke = status && omrade ? Math.ceil(status.defenders * omrade.terreng) : 0
+  const harForsvar = id !== null && tilstand.missilforsvar.includes(id)
+  const gull = tilstand.status?.gold ?? 0
+  const soldater = tilstand.status?.soldiers ?? 0
 
   // Rundes opp, så alle prosentverdier gir minst én så lenge spilleren har noe å bruke
-  const antall = Math.ceil((ressurs * andel) / 100)
-  const enhet = erEgen ? 'gull' : antall === 1 ? 'soldat' : 'soldater'
+  const antall = Math.ceil((soldater * andel) / 100)
+  const enhet = antall === 1 ? 'soldat' : 'soldater'
 
-  const [melding, setMelding] = useState('')
   const [venter, setVenter] = useState(false)
 
   async function utfor(event: FormEvent) {
     event.preventDefault()
+    if (!id || !omrade) return
     setVenter(true)
-    setMelding('')
+    settSvar(null)
     const { data, feil } = await handling({
       handling: erEgen ? 'forsterk' : 'angrip',
       omrade: id,
@@ -405,62 +342,158 @@ function Omradepanel({
     })
     setVenter(false)
     if (feil || !data) {
-      setMelding(feil ?? 'Noe gikk galt.')
+      settSvar({ riktig: false, tekst: feil ?? 'Noe gikk galt.' })
       return
     }
     settStatus(data.status as unknown as Spillerstatus)
-    if (erEgen) setMelding('Forsvaret er forsterket.')
-    else setMelding(data.erobret ? `Du erobret ${omrade.navn}!` : 'Forsvaret holdt, men de mistet soldater.')
+    if (erEgen) settSvar({ riktig: true, tekst: 'Forsvaret er forsterket.' })
+    else if (data.erobret) settSvar({ riktig: true, tekst: `Du erobret ${omrade.navn}!` })
+    else settSvar({ riktig: false, tekst: 'Forsvaret holdt, men de mistet soldater.' })
   }
 
+  const varer = [
+    {
+      navn: `${SOLDATPAKKE.soldater} ekstra soldater, ${SOLDATPAKKE.pris} gull. Dyrt, så dette er for nødstilfeller.`,
+      ikon: <IkonSoldat />,
+      pris: SOLDATPAKKE.pris,
+      mulig: true,
+      valgt: undefined,
+      vedKlikk: kjopSoldater,
+    },
+    {
+      navn: `Nuke, ${PRIS.nuke} gull. Tar 80 % av troppene i et område, hvor som helst på kartet.`,
+      ikon: <IkonNuke />,
+      pris: PRIS.nuke,
+      mulig: kanSikte.nuke,
+      valgt: sikter === 'nuke',
+      vedKlikk: () => velgVare('nuke'),
+    },
+    {
+      navn: `Missilforsvar, ${PRIS.missil} gull. Skyter ned én nuke mot et av områdene dine. Bare klanen din ser det.`,
+      ikon: <IkonSkjold />,
+      pris: PRIS.missil,
+      mulig: kanSikte.missil,
+      valgt: sikter === 'missil',
+      vedKlikk: () => velgVare('missil'),
+    },
+  ]
+
   return (
-    <section className="moc-panel moc-omradepanel">
-      <h2>{omrade.navn}</h2>
-      {OMTALE[id] && <p className="moc-beskjed">{OMTALE[id]}</p>}
-      {status && (
-        <p className="moc-fakta">
-          {eier ? `Eies av ${eier.name}` : 'Nøytralt'} · {status.defenders} forsvarere
-          {omrade.terreng > 1 && ` · terreng +${Math.round((omrade.terreng - 1) * 100)} %`}
+    <section className="moc-panel moc-kontroll" aria-label="Handlinger">
+      <div className="moc-kontroll-info" role={sikter ? 'status' : undefined}>
+        {sikter ? (
+          <>
+            <strong>
+              {sikter === 'nuke'
+                ? `Klikk på området du vil nuke (${PRIS.nuke} gull).`
+                : `Klikk på et av områdene dine for å legge missilforsvar der (${PRIS.missil} gull).`}
+            </strong>
+            <button type="button" className="moc-kontroll-avbryt" onClick={avbrytSikte}>
+              Avbryt
+            </button>
+          </>
+        ) : omrade && status ? (
+          <span>
+            <strong>{omrade.navn}</strong> · {eier ? eier.name : 'Nøytralt'} · {status.defenders} forsvarere
+            {omrade.terreng > 1 && ` · terreng +${Math.round((omrade.terreng - 1) * 100)} %`}
+            {harForsvar && ' · missilforsvar'}
+            {kanSpille && kanAngripe && (
+              antall > styrke
+                ? <strong className="moc-kontroll-nok"> · Nok til å erobre</strong>
+                : ` · Du trenger minst ${styrke + 1}`
+            )}
+            {kanSpille && !kanAngripe && !erEgen && ' · Grenser ikke til klanen din'}
+            {erEgen && ' · 1 soldat = 1 forsvarer'}
+          </span>
+        ) : omrade ? (
+          <span>
+            <strong>{omrade.navn}</strong>
+            {OMTALE[omrade.id] && ` · ${OMTALE[omrade.id]}`}
+          </span>
+        ) : (
+          <span>Velg et område på kartet.</span>
+        )}
+      </div>
+
+      {kanSpille && (
+        <div className="moc-kontroll-rad">
+          <form className="moc-kontroll-send" onSubmit={utfor}>
+            <output className="moc-kontroll-antall" htmlFor="moc-andel">
+              {antall} {enhet}
+            </output>
+            <input
+              id="moc-andel"
+              className="moc-slider"
+              type="range"
+              min={1}
+              max={100}
+              value={andel}
+              disabled={soldater < 1}
+              aria-label="Soldater du vil sende"
+              aria-valuetext={`${andel} prosent, ${antall} ${enhet}`}
+              onChange={(e) => settAndel(Number(e.target.value))}
+            />
+            <button
+              type="submit"
+              className="moc-knapp moc-kontroll-knapp"
+              disabled={venter || sikter !== null || soldater < 1 || !(kanAngripe || erEgen)}
+            >
+              {erEgen ? 'Forsterk' : 'Send'}
+            </button>
+          </form>
+          <div className="moc-kontroll-butikk">
+            {varer.map((vare) => (
+              <button
+                key={vare.pris}
+                type="button"
+                className="moc-knapp-liten moc-ikonknapp"
+                title={vare.navn}
+                aria-label={vare.navn}
+                aria-pressed={vare.valgt}
+                disabled={opptatt || !vare.mulig || gull < vare.pris}
+                onClick={vare.vedKlikk}
+              >
+                {vare.ikon}
+                <span className="moc-ikonpris">{vare.pris}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {svar && (
+        <p className={`${svar.riktig ? 'moc-riktig' : 'moc-feil'} moc-kontroll-svar`} role="status">
+          {svar.tekst}
         </p>
       )}
-      {harForsvar && <p className="moc-fakta">Har missilforsvar. Bare klanen din kan se det.</p>}
-
-      {kanSpille && (kanAngripe || erEgen) && (
-        <form className="moc-handling" onSubmit={utfor}>
-          <label htmlFor="moc-andel">{erEgen ? 'Gull du vil bruke' : 'Soldater du vil sende'}</label>
-          <div className="moc-andel-verdi">
-            <strong>{antall} {enhet}</strong>
-            <span>{andel} % av {ressurs}</span>
-          </div>
-          <input
-            id="moc-andel"
-            className="moc-slider"
-            type="range"
-            min={1}
-            max={100}
-            value={andel}
-            disabled={ressurs < 1}
-            aria-valuetext={`${andel} prosent, ${antall} ${enhet}`}
-            onChange={(e) => settAndel(Number(e.target.value))}
-          />
-          <p className={!erEgen && antall > styrke ? 'moc-andel-hint moc-andel-nok' : 'moc-andel-hint'}>
-            {erEgen
-              ? '1 gull = 1 forsvarer'
-              : antall > styrke
-                ? 'Nok til å erobre'
-                : `Du trenger minst ${styrke + 1} for å erobre`}
-          </p>
-          <button type="submit" className="moc-knapp" disabled={venter || ressurs < 1}>
-            {erEgen ? 'Forsterk' : 'Angrip'}
-          </button>
-        </form>
-      )}
-
-      {kanSpille && status && !kanAngripe && !erEgen && (
-        <p className="moc-beskjed">Området grenser ikke til klanen din ennå.</p>
-      )}
-      {melding && <p className="moc-beskjed" role="status">{melding}</p>}
     </section>
+  )
+}
+
+function IkonSoldat() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="10" cy="8" r="4" fill="currentColor" />
+      <path d="M2 21c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="currentColor" />
+      <path d="M20 4v6M17 7h6" fill="none" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  )
+}
+
+function IkonNuke() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="2" fill="currentColor" />
+      <circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" strokeWidth="6" strokeDasharray="7.33 7.33" transform="rotate(-120 12 12)" />
+    </svg>
+  )
+}
+
+function IkonSkjold() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 2l9 4v6c0 5-4 9-9 10.5C7 21 3 17 3 12V6Z" fill="currentColor" />
+    </svg>
   )
 }
 

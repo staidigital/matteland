@@ -306,8 +306,8 @@ begin
 end;
 $$;
 
--- Bruker gull på å gi et av klanens områder flere forsvarere.
-create function public.moc_fortify(p_player uuid, p_region text, p_gold integer)
+-- Flytter egne soldater inn i et av klanens områder, der de blir forsvarere.
+create function public.moc_fortify(p_player uuid, p_region text, p_soldiers integer)
 returns jsonb
 language plpgsql
 set search_path = ''
@@ -322,18 +322,18 @@ begin
     raise exception 'Ingen runde er i gang.' using errcode = 'P0001';
   end if;
   select clan_id into v_clan from public.players where id = p_player;
-  if p_gold is null or p_gold < 1 then
-    raise exception 'Du må bruke minst ett gull.' using errcode = 'P0001';
+  if p_soldiers is null or p_soldiers < 1 then
+    raise exception 'Du må sende minst én soldat.' using errcode = 'P0001';
   end if;
 
-  update public.player_stats set gold = gold - p_gold
-    where round_id = v_round and player_id = p_player and gold >= p_gold
+  update public.player_stats set soldiers = soldiers - p_soldiers
+    where round_id = v_round and player_id = p_player and soldiers >= p_soldiers
     returning * into v_stats;
   if not found then
-    raise exception 'Du har ikke nok gull.' using errcode = 'P0001';
+    raise exception 'Du har ikke nok soldater.' using errcode = 'P0001';
   end if;
 
-  update public.round_regions set defenders = defenders + p_gold
+  update public.round_regions set defenders = defenders + p_soldiers
     where round_id = v_round and region_id = p_region and clan_id = v_clan;
   if not found then
     raise exception 'Området tilhører ikke klanen din.' using errcode = 'P0001';

@@ -299,25 +299,6 @@
   margin-bottom: 0;
 }
 
-.moc-handling .moc-knapp {
-  width: 100%;
-  margin-top: 0;
-}
-
-.moc-andel-verdi {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-
-.moc-andel-verdi strong {
-  color: var(--ink);
-  font-size: 1.15rem;
-}
-
 .moc-panel input.moc-slider {
   display: block;
   padding: 0;
@@ -329,17 +310,6 @@
 
 .moc-panel input.moc-slider:disabled {
   cursor: not-allowed;
-}
-
-.moc-andel-hint {
-  margin: 0 0 12px;
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-
-.moc-andel-nok {
-  color: var(--r1);
-  font-weight: 600;
 }
 
 .moc-valg {
@@ -402,19 +372,6 @@
 
 .moc-panel .moc-feil {
   margin: 0 0 12px;
-}
-
-.moc-fakta {
-  margin: 0 0 12px;
-  color: var(--muted);
-}
-
-.moc-omradepanel .moc-beskjed {
-  margin: 10px 0 0;
-}
-
-.moc-omradepanel h2 + .moc-beskjed {
-  margin: 0 0 8px;
 }
 
 .moc-stilling,
@@ -563,64 +520,108 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Butikken */
-.moc-butikk {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.moc-butikk li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 0;
-  border-top: 1px solid var(--line);
-}
-
-.moc-butikk li:first-child {
-  padding-top: 0;
-  border-top: 0;
-}
-
-.moc-butikk li:last-child {
-  padding-bottom: 0;
-}
-
-.moc-butikk div {
+/* Kontrollinja under kartet: send tropper og kjøp fra butikken */
+.moc-panel.moc-kontroll {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
+  padding: 8px 12px;
+}
+
+.moc-kontroll-info {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 1.4em;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.moc-kontroll-info strong {
+  color: var(--ink);
+}
+
+.moc-kontroll-info .moc-kontroll-nok {
+  color: var(--r1);
+}
+
+.moc-kontroll-avbryt {
+  flex-shrink: 0;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: underline;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.moc-kontroll-rad,
+.moc-kontroll-send,
+.moc-kontroll-butikk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.moc-kontroll-rad {
+  gap: 16px;
+}
+
+.moc-kontroll-send {
+  flex: 1;
   min-width: 0;
 }
 
-.moc-butikk small {
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-
-.moc-butikk .moc-knapp-liten {
+.moc-kontroll-antall {
+  flex-shrink: 0;
+  min-width: 6.5em;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
-.moc-panel .moc-butikk-svar {
-  margin: 12px 0 0;
+.moc-kontroll .moc-kontroll-knapp {
+  flex-shrink: 0;
+  min-width: 84px;
+  margin: 0;
+  padding: 0 12px;
+}
+
+.moc-kontroll .moc-kontroll-knapp:disabled {
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  opacity: 1;
+}
+
+.moc-ikonknapp {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  width: 44px;
+  padding: 0;
+}
+
+.moc-ikonknapp svg {
+  width: 20px;
+  height: 20px;
+}
+
+.moc-ikonpris {
+  font-size: 0.68rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.moc-panel .moc-kontroll-svar {
+  margin: 0;
+  font-size: 0.9rem;
 }
 
 /* Sikting på kartet */
-.moc-sikte {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 12px;
-  font-weight: 600;
-  background: var(--card);
-  border: 2px solid var(--pen);
-  border-radius: 8px;
-}
-
 .moc-mal {
   cursor: crosshair;
 }
@@ -755,6 +756,25 @@
 
   .moc-nuke-tekst {
     animation-delay: 0s;
+  }
+}
+
+@media (max-width: 600px) {
+  .moc-kontroll-rad {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .moc-kontroll-send {
+    flex-basis: 100%;
+  }
+
+  .moc-kontroll-antall {
+    min-width: 5.5em;
+  }
+
+  .moc-kontroll .moc-kontroll-knapp {
+    min-width: 72px;
   }
 }
 
