@@ -96,14 +96,14 @@ async function rundePagar() {
   return data !== null
 }
 
-/** Lager nye klaner og fordeler alle spillerne tilfeldig. */
+/** Lager nye klaner og fordeler spillerne som er med i neste runde, tilfeldig. De andre mister klanen sin. */
 async function fordelKlaner(storrelse: unknown) {
   if (typeof storrelse !== 'number' || storrelse < 1) return svar(400, { feil: 'Ugyldig klanstørrelse.' })
   if (await rundePagar()) return svar(400, { feil: 'Klanene kan ikke fordeles mens en runde pågår.' })
 
-  const { data: spillere, error } = await admin.from('players').select('id')
+  const { data: spillere, error } = await admin.from('players').select('id').eq('in_next_round', true)
   if (error) return svar(500, { feil: error.message })
-  if (!spillere.length) return svar(400, { feil: 'Det finnes ingen spillere.' })
+  if (!spillere.length) return svar(400, { feil: 'Ingen spillere er valgt til neste runde.' })
 
   const antall = Math.ceil(spillere.length / storrelse)
   if (antall > KLANNAVN.length) return svar(400, { feil: `Det kan være høyst ${KLANNAVN.length} klaner. Velg større klaner.` })
@@ -132,6 +132,15 @@ async function settKlan(id: unknown, klan: unknown) {
   if (!(await erSpiller(id))) return svar(404, { feil: 'Fant ikke spilleren.' })
   if (await rundePagar()) return svar(400, { feil: 'Klaner kan ikke endres mens en runde pågår.' })
   const { error } = await admin.from('players').update({ clan_id: klan || null }).eq('id', id as string)
+  if (error) return svar(500, { feil: error.message })
+  return svar(200, { ok: true })
+}
+
+/** Gjelder fra neste runde, så det er trygt mens en runde pågår. Klanen ryddes når runden startes. */
+async function settMed(id: unknown, med: unknown) {
+  if (typeof med !== 'boolean') return svar(400, { feil: 'Ugyldig valg.' })
+  if (!(await erSpiller(id))) return svar(404, { feil: 'Fant ikke spilleren.' })
+  const { error } = await admin.from('players').update({ in_next_round: med }).eq('id', id as string)
   if (error) return svar(500, { feil: error.message })
   return svar(200, { ok: true })
 }
@@ -176,6 +185,8 @@ Deno.serve(async (req) => {
       return fordelKlaner(innhold.storrelse)
     case 'sett-klan':
       return settKlan(innhold.id, innhold.klan)
+    case 'sett-med':
+      return settMed(innhold.id, innhold.med)
     case 'start-runde':
       return startRunde(innhold.minutter)
     case 'avslutt-runde':

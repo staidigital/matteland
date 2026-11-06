@@ -7,7 +7,8 @@ create table public.clans (
 );
 
 alter table public.players
-  add column clan_id uuid references public.clans (id) on delete set null;
+  add column clan_id uuid references public.clans (id) on delete set null,
+  add column in_next_round boolean not null default true;
 
 create table public.regions (
   id text primary key,
@@ -116,6 +117,11 @@ begin
   if exists (select 1 from public.rounds where ends_at > now()) then
     raise exception 'En runde er allerede i gang.' using errcode = 'P0001';
   end if;
+
+  -- Spillere som er valgt bort, er ikke med. Klaner de etterlater tomme, skal ikke få område på kartet.
+  update public.players set clan_id = null where not in_next_round and clan_id is not null;
+  delete from public.clans c where not exists (select 1 from public.players p where p.clan_id = c.id);
+
   select count(*) into v_clans from public.clans;
   if v_clans = 0 then
     raise exception 'Fordel spillerne på klaner først.' using errcode = 'P0001';

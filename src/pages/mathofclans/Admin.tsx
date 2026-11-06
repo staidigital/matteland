@@ -4,7 +4,7 @@ import { FunctionsHttpError } from '@supabase/supabase-js'
 import { erAdmin, supabase, useSesjon } from './supabase.ts'
 import './mathofclans.css'
 
-type Spiller = { id: string; brukernavn: string; passord: string; klan: string | null }
+type Spiller = { id: string; brukernavn: string; passord: string; klan: string | null; med: boolean }
 type Klan = { id: string; name: string }
 type Runde = { ends_at: string }
 
@@ -49,11 +49,12 @@ function Spilleradministrasjon() {
   const [passord, setPassord] = useState(lagPassord)
   const [feil, setFeil] = useState('')
   const [venter, setVenter] = useState(false)
+  const [lagrerValg, setLagrerValg] = useState(0)
 
   const hentSpillere = useCallback(async () => {
     // Tabellene peker begge på auth.users, så de hentes hver for seg og settes sammen her
     const [spillerSvar, passordSvar, klanSvar, rundeSvar] = await Promise.all([
-      supabase.from('players').select('id, username, clan_id').order('username'),
+      supabase.from('players').select('id, username, clan_id, in_next_round').order('username'),
       supabase.from('player_credentials').select('user_id, password_plain'),
       supabase.from('clans').select('id, name').order('name'),
       supabase.from('rounds').select('ends_at').order('started_at', { ascending: false }).limit(1).maybeSingle(),
@@ -69,6 +70,7 @@ function Spilleradministrasjon() {
         brukernavn: rad.username,
         passord: passordFor.get(rad.id) ?? '',
         klan: rad.clan_id,
+        med: rad.in_next_round,
       })),
     )
     setKlaner(klanSvar.data)
@@ -110,7 +112,22 @@ function Spilleradministrasjon() {
     }
   }
 
+  /** Oppdaterer lista med en gang, så det går raskt å krysse av flere spillere etter hverandre. */
+  async function settMed(spiller: Spiller, med: boolean) {
+    setSpillere((liste) => liste && liste.map((s) => (s.id === spiller.id ? { ...s, med } : s)))
+    setFeil('')
+    setLagrerValg((antall) => antall + 1)
+    const feilmelding = await kall({ handling: 'sett-med', id: spiller.id, med })
+    if (feilmelding) {
+      setFeil(feilmelding)
+      await hentSpillere()
+    }
+    setLagrerValg((antall) => antall - 1)
+  }
+
   const rundePagar = runde !== null && new Date(runde.ends_at) > new Date()
+  const deltakere = spillere?.filter((s) => s.med) ?? []
+  const utenKlan = deltakere.filter((s) => !s.klan)
 
   return (
     <section className="moc-admin">
@@ -144,7 +161,7 @@ function Spilleradministrasjon() {
               <label>
                 Spillere per klan
                 <select value={klanstorrelse} onChange={(e) => setKlanstorrelse(e.target.value)}>
-                  {[2, 3, 4, 5].map((n) => (
+                  {[1, 2, 3, 4, 5].map((n) => (
                     <option key={n}>{n}</option>
                   ))}
                 </select>
@@ -152,7 +169,7 @@ function Spilleradministrasjon() {
               <button
                 type="button"
                 className="moc-knapp"
-                disabled={venter}
+                disabled={venter || lagrerValg > 0 || deltakere.length === 0}
                 onClick={() => {
                   if (klaner.length === 0 || window.confirm('Lage nye klaner? De gamle forsvinner.')) {
                     void utfor({ handling: 'fordel-klaner', storrelse: Number(klanstorrelse) })
@@ -162,6 +179,11 @@ function Spilleradministrasjon() {
                 Fordel på klaner
               </button>
             </div>
+            {klaner.length > 0 && utenKlan.length > 0 && (
+              <p className="moc-admin-varsel" role="status">
+                Uten klan: {utenKlan.map((s) => s.brukernavn).join(', ')}. De blir ikke med før de får en klan.
+              </p>
+            )}
             <div className="moc-admin-rad moc-admin-start">
               <label>
                 Minutter
@@ -174,7 +196,7 @@ function Spilleradministrasjon() {
               <button
                 type="button"
                 className="moc-knapp"
-                disabled={venter || klaner.length === 0}
+                disabled={venter || lagrerValg > 0 || klaner.length === 0}
                 onClick={() => void utfor({ handling: 'start-runde', minutter: Number(minutter) })}
               >
                 Start runde
@@ -229,15 +251,29 @@ function Spilleradministrasjon() {
       {spillere?.length === 0 && <p className="moc-beskjed">Ingen spillere ennå.</p>}
 
       {spillere && spillere.length > 0 && (
+        <p className="moc-admin-antall">
+          <strong>{deltakere.length} av {spillere.length}</strong> spillere er med i neste runde.
+        </p>
+      )}
+
+      {spillere && spillere.length > 0 && (
         <ul className="moc-spillere">
           {spillere.map((spiller) => (
-            <li key={spiller.id}>
-              <div className="moc-spiller-info">
-                <strong>{spiller.brukernavn}</strong>
-                <code>{spiller.passord}</code>
-              </div>
+            <li key={spiller.id} className={spiller.med ? undefined : 'moc-spiller-ute'}>
+              <label className="moc-spiller-med">
+                <input
+                  type="checkbox"
+                  checked={spiller.med}
+                  aria-label={`${spiller.brukernavn} er med i neste runde`}
+                  onChange={(e) => void settMed(spiller, e.target.checked)}
+                />
+                <span className="moc-spiller-info">
+                  <strong>{spiller.brukernavn}</strong>
+                  <code>{spiller.passord}</code>
+                </span>
+              </label>
               <div className="moc-spiller-valg">
-                {klaner.length > 0 && (
+                {spiller.med && klaner.length > 0 && (
                   <select
                     className="moc-admin-klan"
                     aria-label={`Klan for ${spiller.brukernavn}`}
