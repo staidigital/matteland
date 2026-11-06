@@ -1,4 +1,5 @@
 import { Analytics } from '@vercel/analytics/react'
+import { lazy, Suspense } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout.tsx'
 import Home from './pages/Home.tsx'
@@ -23,6 +24,10 @@ import LineareFunksjoner from './pages/1t/lineare/LineareFunksjoner.tsx'
 import Polynomfunksjoner from './pages/1t/polynomfunksjoner/Polynomfunksjoner.tsx'
 import Formler from './pages/1t/formler/Formler.tsx'
 
+// Lastes for seg, så resten av siden slipper å laste ned Supabase
+const MathOfClans = lazy(() => import('./pages/mathofclans/MathOfClans.tsx'))
+const MathOfClansAdmin = lazy(() => import('./pages/mathofclans/Admin.tsx'))
+
 export default function App() {
   return (
     <>
@@ -30,6 +35,22 @@ export default function App() {
         <Route element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="1t" element={<Matematikk1T />} />
+          <Route
+            path="math-of-clans"
+            element={
+              <Suspense>
+                <MathOfClans />
+              </Suspense>
+            }
+          />
+          <Route
+            path="math-of-clans/admin"
+            element={
+              <Suspense>
+                <MathOfClansAdmin />
+              </Suspense>
+            }
+          />
           <Route path="*" element={<NotFound />} />
         </Route>
         {/* Presentasjoner bruker hele skjermen og har sin egen kontrollinje */}
