@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import Kart, { OMRADER } from './Kart.tsx'
-import type { Klan, Spillerstatus, Tilstand } from './useRunde.ts'
+import type { Effekt, Klan, Spillerstatus, Tilstand } from './useRunde.ts'
 
 export type Handling = (innhold: Record<string, unknown>) => Promise<{ data?: Record<string, never> & Record<string, unknown>; feil?: string }>
 
@@ -18,6 +18,14 @@ const NIVAER = [
   { niva: 2, navn: 'Middels', soldater: 16, gull: 8 },
   { niva: 3, navn: 'Vanskelig', soldater: 60, gull: 30 },
 ]
+
+// Prisene bestemmes på serveren (spill-butikk.sql). Her står de bare for å kunne vises.
+const SOLDATPAKKE = { soldater: 10, pris: 30 }
+const PRIS = { nuke: 150, missil: 100 }
+
+type Vare = keyof typeof PRIS
+
+const INGEN = new Set<string>()
 
 const OMTALE: Record<string, string> = {
   'division-by-zero': 'Udefinert. Ingen som har gått inn her, har kommet ut igjen.',
@@ -54,13 +62,20 @@ type Props = {
   spillerId: string
   handling: Handling
   settStatus: (status: Spillerstatus) => void
+  effekter: Effekt[]
+  fjernEffekt: (id: string) => void
+  oppdaterForsvar: () => Promise<void>
 }
 
-export default function Spillskjerm({ tilstand, spillerId, handling, settStatus }: Props) {
+export default function Spillskjerm({ tilstand, spillerId, handling, settStatus, effekter, fjernEffekt, oppdaterForsvar }: Props) {
   const naa = useNaa()
   const [valgt, setValgt] = useState<string | null>(null)
   // Ligger her og ikke i områdepanelet, så slideren beholder verdien når spilleren velger et nytt område
   const [andel, setAndel] = useState(50)
+  const [sikter, setSikter] = useState<Vare | null>(null)
+  const [butikkSvar, setButikkSvar] = useState<Tilbakemelding | null>(null)
+  const [kjoper, setKjoper] = useState(false)
+  const kartflate = useRef<HTMLDivElement>(null)
 
   const klanId = tilstand.spillere.find((s) => s.id === spillerId)?.clan_id ?? null
   const klan = tilstand.klaner.find((k) => k.id === klanId) ?? null
@@ -74,6 +89,75 @@ export default function Spillskjerm({ tilstand, spillerId, handling, settStatus 
     const kandidater = egne.length ? egne.flatMap((o) => o.naboer) : OMRADER.filter((o) => !o.stengt).map((o) => o.id)
     return new Set(kandidater.filter((id) => tilstand.omrader[id] && tilstand.omrader[id].clan_id !== klanId))
   }, [kanSpille, tilstand.omrader, klanId])
+
+  const mal = useMemo(() => {
+    const finnes = OMRADER.filter((o) => tilstand.omrader[o.id])
+    return {
+      // Nuken rekker over hele kartet, også nøytrale områder
+      nuke: new Set(finnes.filter((o) => tilstand.omrader[o.id].clan_id !== klanId).map((o) => o.id)),
+      missil: new Set(
+        finnes.filter((o) => tilstand.omrader[o.id].clan_id === klanId && !tilstand.missilforsvar.includes(o.id)).map((o) => o.id),
+      ),
+    }
+  }, [tilstand.omrader, tilstand.missilforsvar, klanId])
+
+  const aktivtSikte = kanSpille ? sikter : null
+
+  useEffect(() => {
+    if (!aktivtSikte) return
+    const vedTast = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSikter(null)
+    }
+    window.addEventListener('keydown', vedTast)
+    return () => window.removeEventListener('keydown', vedTast)
+  }, [aktivtSikte])
+
+  function velgVare(vare: Vare) {
+    setButikkSvar(null)
+    setSikter(sikter === vare ? null : vare)
+    // På mobil ligger butikken under kartet, så spilleren må se kartet for å sikte
+    kartflate.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }
+
+  async function kjopSoldater() {
+    setKjoper(true)
+    setButikkSvar(null)
+    const { data, feil } = await handling({ handling: 'kjop-soldater', antall: SOLDATPAKKE.soldater })
+    setKjoper(false)
+    if (feil || !data) {
+      setButikkSvar({ riktig: false, tekst: feil ?? 'Noe gikk galt.' })
+      return
+    }
+    settStatus(data.status as unknown as Spillerstatus)
+    setButikkSvar({ riktig: true, tekst: `Du kjøpte ${SOLDATPAKKE.soldater} soldater.` })
+  }
+
+  async function brukVare(vare: Vare, id: string) {
+    const navn = OMRADER.find((o) => o.id === id)!.navn
+    // Sikte avsluttes med en gang, så et dobbeltklikk ikke kan bruke opp gullet to ganger
+    setSikter(null)
+    setKjoper(true)
+    const { data, feil } = await handling({ handling: vare === 'nuke' ? 'nuke' : 'missilforsvar', omrade: id })
+    setKjoper(false)
+    if (feil || !data) {
+      setButikkSvar({ riktig: false, tekst: feil ?? 'Noe gikk galt.' })
+      return
+    }
+    settStatus(data.status as unknown as Spillerstatus)
+    if (vare === 'missil') {
+      void oppdaterForsvar()
+      setButikkSvar({ riktig: true, tekst: `${navn} har nå missilforsvar. Motstanderne kan ikke se det.` })
+    } else if (data.avskutt) {
+      setButikkSvar({ riktig: false, tekst: `Nuken ble skutt ned over ${navn}. Området hadde missilforsvar!` })
+    } else {
+      setButikkSvar({ riktig: true, tekst: `Treff! ${navn} mistet 80 % av troppene.` })
+    }
+  }
+
+  function vedValgPaKart(id: string) {
+    if (!aktivtSikte) setValgt(id)
+    else if (mal[aktivtSikte].has(id)) void brukVare(aktivtSikte, id)
+  }
 
   const liste = rangering(tilstand)
   const lagmedlemmer = klan ? tilstand.spillere.filter((s) => s.clan_id === klan.id).map((s) => s.username) : []
@@ -113,8 +197,30 @@ export default function Spillskjerm({ tilstand, spillerId, handling, settStatus 
       )}
 
       <div className="moc-spillflate">
-        <div className="moc-kartflate">
-          <Kart omrader={tilstand.omrader} klaner={tilstand.klaner} valgt={valgt} angripbare={angripbare} onVelg={setValgt} />
+        <div className="moc-kartflate" ref={kartflate}>
+          {aktivtSikte && (
+            <div className="moc-sikte" role="status">
+              <span>
+                {aktivtSikte === 'nuke'
+                  ? 'Klikk på området du vil nuke.'
+                  : 'Klikk på et av områdene dine for å legge missilforsvar der.'}
+              </span>
+              <button type="button" className="moc-knapp-liten" onClick={() => setSikter(null)}>
+                Avbryt
+              </button>
+            </div>
+          )}
+          <Kart
+            omrader={tilstand.omrader}
+            klaner={tilstand.klaner}
+            valgt={valgt}
+            angripbare={aktivtSikte ? INGEN : angripbare}
+            onVelg={vedValgPaKart}
+            missilforsvar={tilstand.missilforsvar}
+            mal={aktivtSikte ? mal[aktivtSikte] : null}
+            effekter={effekter}
+            onEffektFerdig={fjernEffekt}
+          />
           {valgt && (
             <Omradepanel
               key={valgt}
@@ -123,6 +229,7 @@ export default function Spillskjerm({ tilstand, spillerId, handling, settStatus 
               klanId={klanId}
               kanSpille={kanSpille}
               kanAngripe={angripbare.has(valgt)}
+              harForsvar={tilstand.missilforsvar.includes(valgt)}
               andel={andel}
               settAndel={setAndel}
               handling={handling}
@@ -142,6 +249,45 @@ export default function Spillskjerm({ tilstand, spillerId, handling, settStatus 
             />
           )}
 
+          {kanSpille && tilstand.status && (
+            <section className="moc-panel">
+              <h2>Bruk gull</h2>
+              <ul className="moc-butikk">
+                <Vareplass
+                  navn={`${SOLDATPAKKE.soldater} ekstra soldater`}
+                  omtale="Dyrt, så dette er for nødstilfeller."
+                  pris={SOLDATPAKKE.pris}
+                  gull={tilstand.status.gold}
+                  sperret={kjoper}
+                  onKjop={() => void kjopSoldater()}
+                />
+                <Vareplass
+                  navn="Nuke"
+                  omtale="Tar 80 % av troppene i et område, hvor som helst på kartet."
+                  pris={PRIS.nuke}
+                  gull={tilstand.status.gold}
+                  sperret={kjoper || mal.nuke.size === 0}
+                  aktiv={aktivtSikte === 'nuke'}
+                  onKjop={() => velgVare('nuke')}
+                />
+                <Vareplass
+                  navn="Missilforsvar"
+                  omtale="Skyter ned én nuke mot et av områdene dine. Bare klanen din ser det."
+                  pris={PRIS.missil}
+                  gull={tilstand.status.gold}
+                  sperret={kjoper || mal.missil.size === 0}
+                  aktiv={aktivtSikte === 'missil'}
+                  onKjop={() => velgVare('missil')}
+                />
+              </ul>
+              {butikkSvar && (
+                <p className={`${butikkSvar.riktig ? 'moc-riktig' : 'moc-feil'} moc-butikk-svar`} role="status">
+                  {butikkSvar.tekst}
+                </p>
+              )}
+            </section>
+          )}
+
           <section className="moc-panel">
             <h2>Stillingen</h2>
             <ol className="moc-stilling">
@@ -151,6 +297,9 @@ export default function Spillskjerm({ tilstand, spillerId, handling, settStatus 
                   <span className="moc-stilling-navn">{k.name}</span>
                   <span>
                     <strong>{omrader}</strong> områder · {forsvarere} forsvarere
+                  </span>
+                  <span className="moc-stilling-lag">
+                    {tilstand.spillere.filter((s) => s.clan_id === k.id).map((s) => s.username).join(', ')}
                   </span>
                 </li>
               ))}
@@ -171,12 +320,50 @@ export default function Spillskjerm({ tilstand, spillerId, handling, settStatus 
   )
 }
 
+function Vareplass({
+  navn,
+  omtale,
+  pris,
+  gull,
+  sperret,
+  aktiv,
+  onKjop,
+}: {
+  navn: string
+  omtale: string
+  pris: number
+  gull: number
+  sperret: boolean
+  aktiv?: boolean
+  onKjop: () => void
+}) {
+  return (
+    <li>
+      <div>
+        <strong>{navn}</strong>
+        <small>{omtale}</small>
+      </div>
+      <button
+        type="button"
+        className="moc-knapp-liten"
+        aria-label={`${navn}, ${pris} gull`}
+        aria-pressed={aktiv}
+        disabled={sperret || gull < pris}
+        onClick={onKjop}
+      >
+        {pris} gull
+      </button>
+    </li>
+  )
+}
+
 function Omradepanel({
   id,
   tilstand,
   klanId,
   kanSpille,
   kanAngripe,
+  harForsvar,
   andel,
   settAndel,
   handling,
@@ -187,6 +374,7 @@ function Omradepanel({
   klanId: string | null
   kanSpille: boolean
   kanAngripe: boolean
+  harForsvar: boolean
   andel: number
   settAndel: (andel: number) => void
   handling: Handling
@@ -235,6 +423,7 @@ function Omradepanel({
           {omrade.terreng > 1 && ` · terreng +${Math.round((omrade.terreng - 1) * 100)} %`}
         </p>
       )}
+      {harForsvar && <p className="moc-fakta">Har missilforsvar. Bare klanen din kan se det.</p>}
 
       {kanSpille && (kanAngripe || erEgen) && (
         <form className="moc-handling" onSubmit={utfor}>

@@ -120,6 +120,18 @@ Deno.serve(async (req) => {
       })
       return rpcSvar(data, error)
     }
+    case 'kjop-soldater': {
+      const { data, error } = await db.rpc('moc_buy_soldiers', { p_player: spiller, p_soldiers: innhold.antall })
+      return rpcSvar(data, error)
+    }
+    case 'nuke': {
+      const { data, error } = await db.rpc('moc_nuke', { p_player: spiller, p_region: innhold.omrade })
+      return rpcSvar(data, error)
+    }
+    case 'missilforsvar': {
+      const { data, error } = await db.rpc('moc_missile_defense', { p_player: spiller, p_region: innhold.omrade })
+      return rpcSvar(data, error)
+    }
     default:
       return svar(400, { feil: 'Ukjent handling.' })
   }

@@ -23,7 +23,7 @@ export default function MathOfClans() {
 }
 
 function Innlogget({ sesjon }: { sesjon: Session }) {
-  const { tilstand, lastet, feil, settStatus } = useRunde(sesjon.user.id)
+  const { tilstand, lastet, feil, settStatus, effekter, fjernEffekt, oppdaterForsvar } = useRunde(sesjon.user.id)
 
   const handling: Handling = useCallback(async (innhold) => {
     const { data, error } = await supabase.functions.invoke('spill', { body: innhold })
@@ -55,7 +55,15 @@ function Innlogget({ sesjon }: { sesjon: Session }) {
       )}
 
       {lastet && tilstand.runde && (
-        <Spillskjerm tilstand={tilstand} spillerId={sesjon.user.id} handling={handling} settStatus={settStatus} />
+        <Spillskjerm
+          tilstand={tilstand}
+          spillerId={sesjon.user.id}
+          handling={handling}
+          settStatus={settStatus}
+          effekter={effekter}
+          fjernEffekt={fjernEffekt}
+          oppdaterForsvar={oppdaterForsvar}
+        />
       )}
     </section>
   )
