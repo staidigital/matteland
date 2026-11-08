@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import Kart, { OMRADER } from './Kart.tsx'
+import Matte from './Matte.tsx'
 import type { Effekt, Klan, Spillerstatus, Tilstand } from './useRunde.ts'
 
 export type Handling = (innhold: Record<string, unknown>) => Promise<{ data?: Record<string, never> & Record<string, unknown>; feil?: string }>
@@ -150,7 +151,7 @@ export default function Spillskjerm({ tilstand, spillerId, handling, settStatus,
     } else if (data.avskutt) {
       setSvar({ riktig: false, tekst: `Nuken ble skutt ned over ${navn}. Området hadde missilforsvar!` })
     } else {
-      setSvar({ riktig: true, tekst: `Treff! ${navn} mistet 80 % av troppene.` })
+      setSvar({ riktig: true, tekst: `Treff! ${navn} er utslettet, og naboområdene mistet halvparten av troppene.` })
     }
   }
 
@@ -361,7 +362,7 @@ function Kontrollinje({
       vedKlikk: kjopSoldater,
     },
     {
-      navn: `Nuke, ${PRIS.nuke} gull. Tar 80 % av troppene i et område, hvor som helst på kartet.`,
+      navn: `Nuke, ${PRIS.nuke} gull. Utsletter et område hvor som helst på kartet, så det blir nøytralt, og naboområdene mister halvparten av troppene.`,
       ikon: <IkonNuke />,
       pris: PRIS.nuke,
       mulig: kanSikte.nuke,
@@ -497,7 +498,19 @@ function IkonSkjold() {
   )
 }
 
-type AktivOppgave = { id: string; sporsmal: string; valg: string[] | null; hint: string | null }
+/** Viser hvilket tema serveren trakk, og om klanen får områdebonus for det. */
+function OppgaveTema({ tema, bonus }: { tema: string; bonus: boolean }) {
+  const info = TEMAER.find((t) => t.id === tema)
+  if (!info) return null
+  return (
+    <p className="moc-oppgavetema">
+      {info.navn} · {info.sted}
+      {bonus && <span title="Klanen din holder et område med dette temaet: 50 % ekstra"> ★ 50 % ekstra</span>}
+    </p>
+  )
+}
+
+type AktivOppgave = { id: string; tema: string; sporsmal: string; valg: string[] | null; hint: string | null; felt: number | null }
 type Tilbakemelding = { riktig: boolean; tekst: string }
 
 function Oppgavepanel({
@@ -513,10 +526,10 @@ function Oppgavepanel({
   handling: Handling
   settStatus: (status: Spillerstatus) => void
 }) {
-  const [tema, setTema] = useState('likning')
   const [niva, setNiva] = useState(1)
   const [oppgave, setOppgave] = useState<AktivOppgave | null>(null)
-  const [svar, setSvar] = useState('')
+  // Én tekst per svarboks. Likninger med flere løsninger får flere bokser.
+  const [svar, setSvar] = useState<string[]>([''])
   const [tilbakemelding, setTilbakemelding] = useState<Tilbakemelding | null>(null)
   const [feil, setFeil] = useState('')
   const [venter, setVenter] = useState(false)
@@ -529,18 +542,19 @@ function Oppgavepanel({
     ? (new Date(tilstand.status.cooldown_until).getTime() - naa) / 1000
     : 0
 
-  async function hentOppgave(nyttTema = tema, nyttNiva = niva) {
+  async function hentOppgave() {
     setVenter(true)
     setFeil('')
-    setSvar('')
-    const { data, feil: feilmelding } = await handling({ handling: 'ny-oppgave', tema: nyttTema, niva: nyttNiva })
+    const { data, feil: feilmelding } = await handling({ handling: 'ny-oppgave', niva })
     setVenter(false)
     if (feilmelding || !data) {
       setOppgave(null)
       setFeil(feilmelding ?? 'Noe gikk galt.')
       return
     }
-    setOppgave(data as unknown as AktivOppgave)
+    const ny = data as unknown as AktivOppgave
+    setSvar(Array(ny.felt ?? 1).fill(''))
+    setOppgave(ny)
     requestAnimationFrame(() => svarfelt.current?.focus())
   }
 
@@ -573,28 +587,6 @@ function Oppgavepanel({
       <h2>Tjen soldater og gull</h2>
 
       <fieldset className="moc-valg">
-        <legend>Tema</legend>
-        <div className="moc-knapper">
-          {TEMAER.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              className="moc-knapp-liten"
-              aria-pressed={tema === t.id}
-              title={t.sted}
-              onClick={() => {
-                setTema(t.id)
-                setOppgave(null)
-              }}
-            >
-              {t.navn}
-              {bonusTemaer.has(t.id) && <span title="Klanen din holder et område med dette temaet: 50 % ekstra"> ★</span>}
-            </button>
-          ))}
-        </div>
-      </fieldset>
-
-      <fieldset className="moc-valg">
         <legend>Nivå</legend>
         <div className="moc-knapper">
           {NIVAER.map((n) => (
@@ -616,18 +608,21 @@ function Oppgavepanel({
 
       {tilbakemelding && (
         <p className={tilbakemelding.riktig ? 'moc-riktig' : 'moc-feil'} role="status">
-          {tilbakemelding.tekst}
+          {tilbakemelding.riktig ? tilbakemelding.tekst : <Matte tekst={tilbakemelding.tekst} />}
         </p>
       )}
 
       {oppgave ? (
         <div className="moc-oppgave">
-          <p className="moc-sporsmal">{oppgave.sporsmal}</p>
+          <OppgaveTema tema={oppgave.tema} bonus={bonusTemaer.has(oppgave.tema)} />
+          <p className="moc-sporsmal">
+            <Matte tekst={oppgave.sporsmal} />
+          </p>
           {oppgave.valg ? (
             <div className="moc-svarvalg">
               {oppgave.valg.map((valg) => (
                 <button key={valg} type="button" className="moc-knapp-liten" disabled={venter} onClick={() => void sendSvar(valg)}>
-                  {valg}
+                  <Matte tekst={valg} />
                 </button>
               ))}
             </div>
@@ -635,22 +630,50 @@ function Oppgavepanel({
             <form
               onSubmit={(e) => {
                 e.preventDefault()
-                void sendSvar(svar)
+                if (!oppgave.felt) return void sendSvar(svar[0])
+                // Tomme bokser betyr færre løsninger, og ingen utfylte bokser betyr ingen løsning
+                const utfylt = svar.map((s) => s.trim()).filter(Boolean)
+                void sendSvar(utfylt.length ? utfylt.join(' og ') : 'ingen løsning')
               }}
             >
               {oppgave.hint && <label htmlFor="moc-svar">{oppgave.hint}</label>}
               <div className="moc-felt-rad">
-                <input
-                  id="moc-svar"
-                  ref={svarfelt}
-                  type="text"
-                  autoComplete="off"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  required
-                  value={svar}
-                  onChange={(e) => setSvar(e.target.value)}
-                />
+                {oppgave.felt ? (
+                  <div className="moc-svarbokser">
+                    {svar.map((verdi, i) => (
+                      <div key={i} className="moc-svarboks">
+                        <span className="moc-matte" aria-hidden="true">
+                          <i className="moc-v">x</i>
+                          <sub>{i + 1}</sub> =
+                        </span>
+                        <input
+                          id={i === 0 ? 'moc-svar' : undefined}
+                          ref={i === 0 ? svarfelt : undefined}
+                          aria-label={`Løsning ${i + 1}`}
+                          type="text"
+                          inputMode="text"
+                          autoComplete="off"
+                          autoCapitalize="none"
+                          spellCheck={false}
+                          value={verdi}
+                          onChange={(e) => setSvar(svar.map((s, j) => (j === i ? e.target.value : s)))}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <input
+                    id="moc-svar"
+                    ref={svarfelt}
+                    type="text"
+                    autoComplete="off"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    required
+                    value={svar[0]}
+                    onChange={(e) => setSvar([e.target.value])}
+                  />
+                )}
                 <button type="submit" className="moc-knapp moc-knapp-rad" disabled={venter}>
                   Svar
                 </button>

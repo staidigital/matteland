@@ -29,10 +29,8 @@ function rpcSvar(data: unknown, error: { code?: string; message: string } | null
   return svar(500, { feil: 'Noe gikk galt på serveren.' })
 }
 
-async function nyOppgave(spiller: string, tema: unknown, niva: unknown) {
-  if (!TEMAER.includes(tema as Tema) || ![1, 2, 3].includes(niva as number)) {
-    return svar(400, { feil: 'Ukjent tema eller nivå.' })
-  }
+async function nyOppgave(spiller: string, niva: unknown) {
+  if (![1, 2, 3].includes(niva as number)) return svar(400, { feil: 'Ukjent nivå.' })
 
   const { data: runde } = await db.from('rounds').select('id').gt('ends_at', new Date().toISOString()).maybeSingle()
   if (!runde) return svar(400, { feil: 'Ingen runde er i gang.' })
@@ -50,14 +48,18 @@ async function nyOppgave(spiller: string, tema: unknown, niva: unknown) {
   // Spørsmålet lagres sammen med fasiten, så spilleren ikke får de samme oppgavene om igjen
   const { data: tidligere } = await db
     .from('tasks')
-    .select('sporsmal:answer->>sporsmal')
+    .select('topic, sporsmal:answer->>sporsmal')
     .eq('player_id', spiller)
-    .eq('topic', tema)
     .eq('level', niva)
     .order('created_at', { ascending: false })
-    .limit(500)
-  const brukte = (tidligere ?? []).map((rad) => rad.sporsmal as string | null).filter((s): s is string => Boolean(s))
-  const oppgave = lagOppgave(tema as Tema, niva as number, brukte)
+    .limit(2000)
+  const rader = (tidligere ?? []) as { topic: string; sporsmal: string | null }[]
+
+  // Spilleren velger bare nivå. Temaet trekkes, men aldri det samme to ganger på rad.
+  const mulige = TEMAER.filter((t) => t !== rader[0]?.topic)
+  const tema: Tema = mulige[Math.floor(Math.random() * mulige.length)]
+  const brukte = rader.filter((rad) => rad.topic === tema && rad.sporsmal).map((rad) => rad.sporsmal as string)
+  const oppgave = lagOppgave(tema, niva as number, brukte)
 
   // En spiller har bare én åpen oppgave om gangen
   await db.from('tasks').delete().eq('player_id', spiller).is('answered_at', null)
@@ -68,7 +70,7 @@ async function nyOppgave(spiller: string, tema: unknown, niva: unknown) {
     .single()
   if (error) return rpcSvar(null, error)
 
-  return svar(200, { id: data.id, sporsmal: oppgave.sporsmal, valg: oppgave.valg ?? null, hint: oppgave.hint ?? null })
+  return svar(200, { id: data.id, tema, sporsmal: oppgave.sporsmal, valg: oppgave.valg ?? null, hint: oppgave.hint ?? null, felt: oppgave.felt ?? null })
 }
 
 async function svarPaOppgave(spiller: string, id: unknown, svarTekst: unknown) {
@@ -111,7 +113,7 @@ Deno.serve(async (req) => {
 
   switch (innhold.handling) {
     case 'ny-oppgave':
-      return nyOppgave(spiller, innhold.tema, innhold.niva)
+      return nyOppgave(spiller, innhold.niva)
     case 'svar':
       return svarPaOppgave(spiller, innhold.id, innhold.svar)
     case 'angrip': {
