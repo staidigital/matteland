@@ -370,6 +370,12 @@
   color: var(--r1);
 }
 
+.moc-oppgavetema {
+  margin: 0 0 4px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 .moc-panel .moc-feil {
   margin: 0 0 12px;
 }

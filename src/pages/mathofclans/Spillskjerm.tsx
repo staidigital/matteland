@@ -497,7 +497,19 @@ function IkonSkjold() {
   )
 }
 
-type AktivOppgave = { id: string; sporsmal: string; valg: string[] | null; hint: string | null }
+/** Viser hvilket tema serveren trakk, og om klanen får områdebonus for det. */
+function OppgaveTema({ tema, bonus }: { tema: string; bonus: boolean }) {
+  const info = TEMAER.find((t) => t.id === tema)
+  if (!info) return null
+  return (
+    <p className="moc-oppgavetema">
+      {info.navn} · {info.sted}
+      {bonus && <span title="Klanen din holder et område med dette temaet: 50 % ekstra"> ★ 50 % ekstra</span>}
+    </p>
+  )
+}
+
+type AktivOppgave = { id: string; tema: string; sporsmal: string; valg: string[] | null; hint: string | null }
 type Tilbakemelding = { riktig: boolean; tekst: string }
 
 function Oppgavepanel({
@@ -513,7 +525,6 @@ function Oppgavepanel({
   handling: Handling
   settStatus: (status: Spillerstatus) => void
 }) {
-  const [tema, setTema] = useState('likning')
   const [niva, setNiva] = useState(1)
   const [oppgave, setOppgave] = useState<AktivOppgave | null>(null)
   const [svar, setSvar] = useState('')
@@ -529,11 +540,11 @@ function Oppgavepanel({
     ? (new Date(tilstand.status.cooldown_until).getTime() - naa) / 1000
     : 0
 
-  async function hentOppgave(nyttTema = tema, nyttNiva = niva) {
+  async function hentOppgave() {
     setVenter(true)
     setFeil('')
     setSvar('')
-    const { data, feil: feilmelding } = await handling({ handling: 'ny-oppgave', tema: nyttTema, niva: nyttNiva })
+    const { data, feil: feilmelding } = await handling({ handling: 'ny-oppgave', niva })
     setVenter(false)
     if (feilmelding || !data) {
       setOppgave(null)
@@ -573,28 +584,6 @@ function Oppgavepanel({
       <h2>Tjen soldater og gull</h2>
 
       <fieldset className="moc-valg">
-        <legend>Tema</legend>
-        <div className="moc-knapper">
-          {TEMAER.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              className="moc-knapp-liten"
-              aria-pressed={tema === t.id}
-              title={t.sted}
-              onClick={() => {
-                setTema(t.id)
-                setOppgave(null)
-              }}
-            >
-              {t.navn}
-              {bonusTemaer.has(t.id) && <span title="Klanen din holder et område med dette temaet: 50 % ekstra"> ★</span>}
-            </button>
-          ))}
-        </div>
-      </fieldset>
-
-      <fieldset className="moc-valg">
         <legend>Nivå</legend>
         <div className="moc-knapper">
           {NIVAER.map((n) => (
@@ -622,6 +611,7 @@ function Oppgavepanel({
 
       {oppgave ? (
         <div className="moc-oppgave">
+          <OppgaveTema tema={oppgave.tema} bonus={bonusTemaer.has(oppgave.tema)} />
           <p className="moc-sporsmal">{oppgave.sporsmal}</p>
           {oppgave.valg ? (
             <div className="moc-svarvalg">
