@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import Kart, { OMRADER } from './Kart.tsx'
+import Matte from './Matte.tsx'
 import type { Effekt, Klan, Spillerstatus, Tilstand } from './useRunde.ts'
 
 export type Handling = (innhold: Record<string, unknown>) => Promise<{ data?: Record<string, never> & Record<string, unknown>; feil?: string }>
@@ -605,19 +606,21 @@ function Oppgavepanel({
 
       {tilbakemelding && (
         <p className={tilbakemelding.riktig ? 'moc-riktig' : 'moc-feil'} role="status">
-          {tilbakemelding.tekst}
+          {tilbakemelding.riktig ? tilbakemelding.tekst : <Matte tekst={tilbakemelding.tekst} />}
         </p>
       )}
 
       {oppgave ? (
         <div className="moc-oppgave">
           <OppgaveTema tema={oppgave.tema} bonus={bonusTemaer.has(oppgave.tema)} />
-          <p className="moc-sporsmal">{oppgave.sporsmal}</p>
+          <p className="moc-sporsmal">
+            <Matte tekst={oppgave.sporsmal} />
+          </p>
           {oppgave.valg ? (
             <div className="moc-svarvalg">
               {oppgave.valg.map((valg) => (
                 <button key={valg} type="button" className="moc-knapp-liten" disabled={venter} onClick={() => void sendSvar(valg)}>
-                  {valg}
+                  <Matte tekst={valg} />
                 </button>
               ))}
             </div>

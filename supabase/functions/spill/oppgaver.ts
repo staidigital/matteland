@@ -125,7 +125,7 @@ const BROK: Variant[][] = [
       const [n, k] = [heltall(3, 12), heltall(2, 9)]
       const t = teller(n)
       return flervalg(`Forkort så langt som mulig: ${t * k}/${n * k}`, brokTekst(t, n), [
-        `${n}/${t}`,
+        brokTekst(n, t),
         brokTekst(t + 1, n),
         brokTekst(t, n + 1),
         brokTekst(t + k, n + k),
@@ -469,7 +469,7 @@ const POTENS: Variant[][] = [
     () => {
       const [g, b] = [velg([2, 3, 5, 7, 10]), heltall(1, 6)]
       const a = b + heltall(1, 6)
-      return tallsvar(`Skriv som én potens av ${g}: ${g}^${a} / ${g}^${b}. Hva blir eksponenten?`, [a - b], undefined, TALL_HINT)
+      return tallsvar(`Skriv som én potens av ${g}: ${g}^${a}/${g}^${b}. Hva blir eksponenten?`, [a - b], undefined, TALL_HINT)
     },
     () => {
       const d = velg([12, 15, 18, 21, 25, 32, 34, 36, 41, 45, 52, 58, 63, 67, 72, 75, 84, 89, 91, 96])
@@ -480,7 +480,7 @@ const POTENS: Variant[][] = [
   [
     () => {
       const [g, a, b, c] = [velg([2, 3, 5, 7]), heltall(2, 8), heltall(2, 8), heltall(1, 5)]
-      return tallsvar(`Skriv som én potens av ${g}: ${g}^${a} · ${g}^${b} / ${g}^${c}. Hva blir eksponenten?`, [a + b - c], undefined, TALL_HINT)
+      return tallsvar(`Skriv som én potens av ${g}: (${g}^${a} · ${g}^${b})/${g}^${c}. Hva blir eksponenten?`, [a + b - c], undefined, TALL_HINT)
     },
     () => {
       const [g, e] = velg([[2, 1], [2, 2], [2, 3], [2, 4], [2, 5], [3, 1], [3, 2], [3, 3], [4, 1], [4, 2], [5, 1], [5, 2], [6, 2], [10, 1], [10, 2]])
@@ -505,7 +505,7 @@ const POTENS: Variant[][] = [
     },
     () => {
       const [a, b, c] = [heltall(2, 7), heltall(2, 7), heltall(1, 3)]
-      return flervalg(`Forenkle: x^${a} · x^${b} / x^${c}`, xPotens(a + b - c), [xPotens(a * b - c), xPotens(a + b + c), xPotens(a + b)])
+      return flervalg(`Forenkle: (x^${a} · x^${b})/x^${c}`, xPotens(a + b - c), [xPotens(a * b - c), xPotens(a + b + c), xPotens(a + b)])
     },
     () => {
       const [p, m, n] = [heltall(2, 4), heltall(2, 4), heltall(2, 3)]
@@ -542,11 +542,11 @@ const POTENS: Variant[][] = [
     },
     () => {
       const [g, m, n, k] = [velg([2, 3, 5, 7]), heltall(2, 5), heltall(2, 4), heltall(1, 6)]
-      return tallsvar(`Skriv som én potens av ${g}: (${g}^${m})^${n} / ${g}^${k}. Hva blir eksponenten?`, [m * n - k], undefined, TALL_HINT)
+      return tallsvar(`Skriv som én potens av ${g}: (${g}^${m})^${n}/${g}^${k}. Hva blir eksponenten?`, [m * n - k], undefined, TALL_HINT)
     },
     () => {
       const [g, a, b, c, d] = [velg([2, 3, 5, 7]), heltall(2, 7), heltall(2, 7), heltall(2, 4), heltall(2, 3)]
-      return tallsvar(`Skriv som én potens av ${g}: ${g}^${a} · ${g}^${b} / (${g}^${c})^${d}. Hva blir eksponenten?`, [a + b - c * d], undefined, TALL_HINT)
+      return tallsvar(`Skriv som én potens av ${g}: (${g}^${a} · ${g}^${b})/(${g}^${c})^${d}. Hva blir eksponenten?`, [a + b - c * d], undefined, TALL_HINT)
     },
     () => {
       const [s, b] = [velg([2, 3, 5, 6, 7]), heltall(1, 4)]
@@ -573,7 +573,7 @@ const POTENS: Variant[][] = [
     () => {
       const [b, c] = [heltall(2, 5), heltall(2, 5)]
       const a = b + c + heltall(1, 5)
-      return flervalg(`Forenkle: x^${a} / (x^${b} · x^${c})`, xPotens(a - b - c), [xPotens(a - b + c), xPotens(a), xPotens(a + b + c)])
+      return flervalg(`Forenkle: x^${a}/(x^${b} · x^${c})`, xPotens(a - b - c), [xPotens(a - b + c), xPotens(a), xPotens(a + b + c)])
     },
     () => {
       const [p, m, n, k] = [heltall(2, 4), heltall(2, 4), heltall(2, 3), heltall(1, 5)]
