@@ -11,6 +11,8 @@ export type Oppgave = {
   sporsmal: string
   valg?: string[]
   hint?: string
+  /** Antall svarbokser, for oppgaver med flere løsninger. Tomme bokser betyr færre løsninger. */
+  felt?: number
   fasit: Fasit
 }
 
@@ -63,6 +65,23 @@ function tallsvar(sporsmal: string, verdier: number[], tekst?: string, hint?: st
   }
 }
 
+/**
+ * Likninger med inntil `felt` løsninger. Eleven får én svarboks per løsning og lar boksene stå tomme
+ * når det er færre løsninger, så antallet bokser ikke røper hvor mange løsninger det er.
+ */
+function flereSvar(sporsmal: string, verdier: number[], tekst?: string, felt = 2): Oppgave {
+  const standardtekst = verdier.length ? verdier.map((v) => `x = ${tall(v)}`).join(' og ') : 'ingen løsning'
+  return {
+    sporsmal,
+    felt,
+    hint:
+      felt === 2
+        ? 'Én løsning per boks. Er det færre løsninger, lar du bokser stå tomme.'
+        : 'Én løsning per boks. La bokser du ikke trenger, stå tomme.',
+    fasit: { type: 'tall', verdier, tekst: tekst ?? standardtekst },
+  }
+}
+
 /** Flervalg der de gale svarene er ulike det riktige. */
 function flervalg(sporsmal: string, riktig: string, feil: string[]): Oppgave {
   const unike = [...new Set(feil)].filter((f) => f !== riktig).slice(0, 3)
@@ -72,7 +91,6 @@ function flervalg(sporsmal: string, riktig: string, feil: string[]): Oppgave {
 const BROK_HINT = 'Svar med brøk (3/4) eller helt tall.'
 const TALL_HINT = 'Svar med et tall.'
 const X_HINT = 'Svar med verdien til x.'
-const TO_HINT = 'Skriv begge løsningene, for eksempel 2 og −3.'
 const ENHET_HINT = 'Svar med et tall, uten enhet.'
 
 const fellesFaktor = (a: number, b: number) => sfd(a, b) !== 1
@@ -718,46 +736,52 @@ const ANDREGRAD: Variant[][] = [
   [
     () => {
       const k = heltall(2, 15)
-      return tallsvar(`Løs likningen: x² = ${k * k}`, [k, -k], losninger(k, -k), TO_HINT)
+      return flereSvar(`Løs likningen: x² = ${k * k}`, [k, -k], losninger(k, -k))
     },
     () => {
       const a = uten0(-12, 12)
-      return tallsvar(`Løs likningen: x${parentes(-a)} = 0`, [0, a], losninger(0, a), TO_HINT)
+      return flereSvar(`Løs likningen: x${parentes(-a)} = 0`, [0, a], losninger(0, a))
     },
     () => {
       const [r, s] = toUlike(-9, 9)
-      return tallsvar(`Løs likningen: ${parentes(-r)}${parentes(-s)} = 0`, [r, s], losninger(r, s), TO_HINT)
+      return flereSvar(`Løs likningen: ${parentes(-r)}${parentes(-s)} = 0`, [r, s], losninger(r, s))
     },
     () => {
       const [a, k] = [heltall(2, 6), heltall(1, 7)]
-      return tallsvar(`Løs likningen: ${a}x² = ${a * k * k}`, [k, -k], losninger(k, -k), TO_HINT)
+      return flereSvar(`Løs likningen: ${a}x² = ${a * k * k}`, [k, -k], losninger(k, -k))
     },
     () => {
       const k = heltall(2, 15)
-      return tallsvar(`Løs likningen: x² − ${k * k} = 0`, [k, -k], losninger(k, -k), TO_HINT)
+      return flereSvar(`Løs likningen: x² − ${k * k} = 0`, [k, -k], losninger(k, -k))
     },
     () => {
       const [k, c] = [heltall(2, 10), heltall(1, 20)]
-      return tallsvar(`Løs likningen: x² + ${c} = ${k * k + c}`, [k, -k], losninger(k, -k), TO_HINT)
+      return flereSvar(`Løs likningen: x² + ${c} = ${k * k + c}`, [k, -k], losninger(k, -k))
     },
   ],
   [
     () => {
       const [r, s] = [uten0(-9, 9), uten0(-9, 9)]
-      if (r === s) return xSvar(`Løs likningen: ${kvadratisk(1, -2 * r, r * r)} = 0`, r, 'Likningen har én løsning.')
-      return tallsvar(`Løs likningen: ${kvadratisk(1, -(r + s), r * s)} = 0`, [r, s], losninger(r, s), TO_HINT)
+      if (r === s) return flereSvar(`Løs likningen: ${kvadratisk(1, -2 * r, r * r)} = 0`, [r])
+      return flereSvar(`Løs likningen: ${kvadratisk(1, -(r + s), r * s)} = 0`, [r, s], losninger(r, s))
     },
     () => {
       const [p, k] = [uten0(-9, 9), heltall(1, 9)]
-      return tallsvar(`Løs likningen: ${parentes(p)}² = ${k * k}`, [k - p, -k - p], losninger(k - p, -k - p), TO_HINT)
+      return flereSvar(`Løs likningen: ${parentes(p)}² = ${k * k}`, [k - p, -k - p], losninger(k - p, -k - p))
     },
     () => {
       const [a, r] = [heltall(2, 6), uten0(-9, 9)]
-      return tallsvar(`Løs likningen: ${kvadratisk(a, -a * r, 0)} = 0`, [0, r], losninger(0, r), TO_HINT)
+      return flereSvar(`Løs likningen: ${kvadratisk(a, -a * r, 0)} = 0`, [0, r], losninger(0, r))
     },
     () => {
       const [a, k] = [heltall(2, 6), heltall(1, 7)]
-      return tallsvar(`Løs likningen: ${kvadratisk(a, 0, -a * k * k)} = 0`, [k, -k], losninger(k, -k), TO_HINT)
+      return flereSvar(`Løs likningen: ${kvadratisk(a, 0, -a * k * k)} = 0`, [k, -k], losninger(k, -k))
+    },
+    () => {
+      // Av og til uten løsning, så eleven må tenke seg om før boksene fylles
+      const [c, k] = [heltall(5, 20), heltall(1, 6)]
+      if (heltall(0, 2) === 0) return flereSvar(`Løs likningen: x² + ${c} = ${tall(c - k * k - heltall(1, 9))}`, [])
+      return flereSvar(`Løs likningen: x² + ${c} = ${c + k * k}`, [k, -k])
     },
     () => {
       const [a, b, c] = [heltall(1, 5), uten0(-9, 9), uten0(-9, 9)]
@@ -778,14 +802,19 @@ const ANDREGRAD: Variant[][] = [
     },
     () => {
       const [r, s] = toUlikeMedSum(-9, 9)
-      return tallsvar(`Løs likningen: ${kvadratisk(1, -(r + s), 0)} = ${tall(-r * s)}`, [r, s], losninger(r, s), TO_HINT)
+      return flereSvar(`Løs likningen: ${kvadratisk(1, -(r + s), 0)} = ${tall(-r * s)}`, [r, s], losninger(r, s))
     },
   ],
   [
     () => {
       const a = heltall(2, 5)
       const [r, s] = toUlike(-7, 7)
-      return tallsvar(`Løs likningen: ${kvadratisk(a, -a * (r + s), a * r * s)} = 0`, [r, s], losninger(r, s), TO_HINT)
+      return flereSvar(`Løs likningen: ${kvadratisk(a, -a * (r + s), a * r * s)} = 0`, [r, s], losninger(r, s))
+    },
+    () => {
+      let [a, b, c] = [heltall(1, 3), uten0(-6, 6), heltall(1, 12)]
+      while (b * b - 4 * a * c >= 0) [a, b, c] = [heltall(1, 3), uten0(-6, 6), heltall(1, 12)]
+      return flereSvar(`Løs likningen: ${kvadratisk(a, b, c)} = 0`, [])
     },
     () => {
       const [a, b, c] = [heltall(1, 5), uten0(-9, 9), uten0(-9, 9)]
@@ -798,7 +827,7 @@ const ANDREGRAD: Variant[][] = [
       const r = uten0(-6, 6)
       let q = uten0(-7, 7)
       while (q % p === 0) q = uten0(-7, 7)
-      return tallsvar(`Løs likningen: ${kvadratisk(p, -(p * r + q), q * r)} = 0`, [q / p, r], `x = ${brokTekst(q, p)} og x = ${tall(r)}`, 'Skriv begge løsningene, for eksempel 2 og −3/2.')
+      return flereSvar(`Løs likningen: ${kvadratisk(p, -(p * r + q), q * r)} = 0`, [q / p, r], `x = ${brokTekst(q, p)} og x = ${tall(r)}`)
     },
     () => {
       const [b, p] = [heltall(2, 20), heltall(1, 12)]
@@ -820,16 +849,15 @@ const ANDREGRAD: Variant[][] = [
     },
     () => {
       const n = heltall(2, 15)
-      return tallsvar(`Summen av et tall og kvadratet av tallet er ${n * n + n}. Hvilke to tall kan det være?`, [n, -n - 1], `${n} og ${tall(-n - 1)}`, TO_HINT)
+      return flereSvar(`Summen av et tall og kvadratet av tallet er ${n * n + n}. Hvilke to tall kan det være?`, [n, -n - 1], `${n} og ${tall(-n - 1)}`)
     },
     () => {
       const r = 5 * heltall(1, 6)
       const s = r + 5 * heltall(1, 6)
-      return tallsvar(
+      return flereSvar(
         `Overskuddet er ${uttrykk([[-1, 'x²'], [r + s, 'x'], [-r * s, '']])} kroner ved x enheter. Ved hvilke to produksjonsmengder er overskuddet null?`,
         [r, s],
         `${r} og ${s} enheter`,
-        'Skriv begge tallene, for eksempel 10 og 30.',
       )
     },
     () => {
@@ -959,23 +987,22 @@ const FUNKSJON: Variant[][] = [
     () => {
       const [r, s] = toUlike(-6, 6)
       const [m, n] = [uten0(-5, 5), uten0(-9, 9)]
-      return tallsvar(
+      return flereSvar(
         `Finn x-verdiene der grafene til f(x) = ${kvadratisk(1, m - (r + s), n + r * s)} og g(x) = ${lineaer(m, n)} skjærer hverandre.`,
         [r, s],
         losninger(r, s),
-        TO_HINT,
       )
     },
     () => {
       const a = heltall(1, 4) * velg([1, -1])
       const [r, s] = toUlike(-8, 8)
-      return tallsvar(`Finn nullpunktene til f(x) = ${kvadratisk(a, -a * (r + s), a * r * s)}.`, [r, s], losninger(r, s), TO_HINT)
+      return flereSvar(`Finn nullpunktene til f(x) = ${kvadratisk(a, -a * (r + s), a * r * s)}.`, [r, s], losninger(r, s))
     },
     () => {
       const [r, s] = toUlike(-5, 5)
       let t = uten0(-5, 5)
       while (t === r || t === s) t = uten0(-5, 5)
-      return tallsvar(`Finn nullpunktene til f(x) = ${parentes(-r)}${parentes(-s)}${parentes(-t)}.`, [r, s, t], `x = ${tall(r)}, x = ${tall(s)} og x = ${tall(t)}`, 'Skriv alle nullpunktene, for eksempel 1, −2 og 3.')
+      return flereSvar(`Finn nullpunktene til f(x) = ${parentes(-r)}${parentes(-s)}${parentes(-t)}.`, [r, s, t], `x = ${tall(r)}, x = ${tall(s)} og x = ${tall(t)}`, 3)
     },
     () => {
       const [r, s] = toUlike(-9, 9)
@@ -1045,10 +1072,15 @@ export function lesTall(svar: string): number[] | null {
 
 export function erRiktig(fasit: Fasit, svar: string) {
   if (fasit.type === 'valg') return svar === fasit.riktig
-  const verdier = lesTall(svar)
-  if (!verdier || verdier.length !== fasit.verdier.length) return false
+  // Tomme svarbokser sendes som «ingen løsning»
+  if (!fasit.verdier.length) return svar.trim() === '' || /ingen/i.test(svar)
+  const lest = lesTall(svar)
+  if (!lest) return false
   const sortert = (liste: number[]) => [...liste].sort((a, b) => a - b)
+  // Samme løsning i begge boksene teller som én, for eksempel ved en dobbel rot
+  const verdier = sortert(lest).filter((v, i, liste) => i === 0 || Math.abs(v - liste[i - 1]) >= 0.006)
   const forventet = sortert(fasit.verdier)
+  if (verdier.length !== forventet.length) return false
   // Brøk og avrundet desimaltall skal begge godkjennes
-  return sortert(verdier).every((v, i) => Math.abs(v - forventet[i]) < 0.006)
+  return verdier.every((v, i) => Math.abs(v - forventet[i]) < 0.006)
 }

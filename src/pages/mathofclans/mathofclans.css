@@ -58,6 +58,33 @@
   margin-bottom: 0;
 }
 
+/* Én boks per løsning i likninger, se Oppgavepanel */
+.moc-svarbokser {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.moc-svarboks {
+  display: flex;
+  flex: 1 1 110px;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.moc-svarboks .moc-matte {
+  font-size: 1.15rem;
+  white-space: nowrap;
+}
+
+.moc-svarboks input {
+  width: 100%;
+  min-width: 0;
+}
+
 .moc-knapp,
 .moc-knapp-liten {
   min-height: 44px;
@@ -758,6 +785,11 @@
   stroke: #1c2733;
   stroke-width: 5px;
   animation: moc-tekst 1.5s 0.8s ease-out both;
+}
+
+.moc-nuke-nabo {
+  font-size: 18px;
+  animation-delay: 1s;
 }
 
 @keyframes moc-rakett-fall {

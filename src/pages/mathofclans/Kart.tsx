@@ -55,12 +55,21 @@ function NukeEffekt({ effekt, onFerdig }: { effekt: Effekt; onFerdig: (id: strin
       ) : (
         <>
           <circle className="moc-blink" r={110} />
-          <circle className="moc-sjokkbolge" r={120} />
+          <circle className="moc-sjokkbolge" r={200} />
           <g className="moc-sopp">
             <rect x={-11} y={-55} width={22} height={60} rx={8} />
             <ellipse cy={-66} rx={44} ry={25} />
           </g>
-          <text className="moc-nuke-tekst" textAnchor="middle" y={-60}>−80 %</text>
+          <text className="moc-nuke-tekst" textAnchor="middle" y={-60}>Utslettet!</text>
+          {omrade.naboer.map((id) => {
+            const nabo = OMRADER.find((o) => o.id === id)
+            if (!nabo || nabo.stengt) return null
+            return (
+              <text key={id} className="moc-nuke-tekst moc-nuke-nabo" textAnchor="middle" x={nabo.x - omrade.x} y={nabo.y - omrade.y - 6}>
+                −50 %
+              </text>
+            )
+          })}
         </>
       )}
     </g>

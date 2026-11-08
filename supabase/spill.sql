@@ -427,6 +427,7 @@ end;
 $$;
 
 -- Nuker et område for 150 gull. Rekker over hele kartet, men et missilforsvar skyter den ned og brukes opp.
+-- Et treff gjør området nøytralt uten tropper, og naboområdene mister halvparten av troppene.
 create function public.moc_nuke(p_player uuid, p_region text)
 returns jsonb
 language plpgsql
@@ -439,6 +440,7 @@ declare
   v_clan_name text;
   v_region_name text;
   v_target public.round_regions;
+  v_neighbors text[];
   v_stats public.player_stats;
   v_intercepted boolean;
 begin
@@ -461,14 +463,22 @@ begin
   end if;
 
   select * into v_target from public.round_regions
-    where round_id = v_round and region_id = p_region for update;
+    where round_id = v_round and region_id = p_region;
   if v_target.region_id is null then
     raise exception 'Dette området kan ikke nukes.' using errcode = 'P0001';
   end if;
+  select name, neighbors into v_region_name, v_neighbors from public.regions where id = p_region;
+
+  -- Låser området og naboene i fast rekkefølge, så to nuker samtidig ikke venter på hverandre for alltid
+  perform 1 from public.round_regions
+    where round_id = v_round and (region_id = p_region or region_id = any (v_neighbors))
+    order by region_id
+    for update;
+  select * into v_target from public.round_regions
+    where round_id = v_round and region_id = p_region;
   if v_target.clan_id is not distinct from v_clan then
     raise exception 'Du kan ikke nuke din egen klan.' using errcode = 'P0001';
   end if;
-  select name into v_region_name from public.regions where id = p_region;
 
   delete from public.round_missile_defenses where round_id = v_round and region_id = p_region;
   v_intercepted := found;
@@ -477,10 +487,13 @@ begin
     insert into public.round_events (round_id, message, effect, region_id)
       values (v_round, v_clan_name || ' sendte en nuke mot ' || v_region_name || ', men den ble skutt ned!', 'nuke_intercepted', p_region);
   else
-    update public.round_regions set defenders = floor(defenders * 0.2)::integer
+    update public.round_regions set clan_id = null, defenders = 0
       where round_id = v_round and region_id = p_region;
+    -- Gjelder alle naboene, også dem klanen som sendte nuken selv eier
+    update public.round_regions set defenders = floor(defenders * 0.5)::integer
+      where round_id = v_round and region_id = any (v_neighbors);
     insert into public.round_events (round_id, message, effect, region_id)
-      values (v_round, v_clan_name || ' nuket ' || v_region_name || ' (' || v_username || ')', 'nuke_hit', p_region);
+      values (v_round, v_clan_name || ' nuket ' || v_region_name || ' (' || v_username || '). Naboene mistet halvparten av troppene.', 'nuke_hit', p_region);
   end if;
 
   return jsonb_build_object('avskutt', v_intercepted, 'status', to_jsonb(v_stats));

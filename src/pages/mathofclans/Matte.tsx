@@ -163,7 +163,12 @@ function brokdel(ledd: Ledd[], nokkel: string) {
 function enkelt(t: Tegn, nokkel: string, stable: boolean): ReactNode {
   switch (t.type) {
     case 'gruppe':
-      return <Fragment key={nokkel}>({linje(t.innhold, nokkel, stable)})</Fragment>
+      // Parenteser brytes ikke over to linjer
+      return (
+        <span className="moc-nw" key={nokkel}>
+          ({linje(t.innhold, nokkel, stable)})
+        </span>
+      )
     case 'variabel':
       return <i className="moc-v" key={nokkel}>{t.tekst}</i>
     case 'mellomrom':

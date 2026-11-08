@@ -76,6 +76,14 @@ function sjekkMatte(hvor, o) {
           return d ? [regn(d[1]) + Math.sqrt(+d[2]), regn(d[1]) - Math.sqrt(+d[2])] : null
         })()
     if (!losninger) return klage(hvor, 'kan ikke lese løsningene', o)
+    if (!losninger.length) {
+      // Ingen løsning: andregradsuttrykket venstre − høyre må ha negativ diskriminant
+      const f = (x) => regn(v, { x }) - regn(h, { x })
+      const [c, pluss, minus] = [f(0), f(1), f(-1)]
+      const [a, b] = [(pluss + minus - 2 * c) / 2, (pluss - minus) / 2]
+      if (!(b * b - 4 * a * c < 0)) klage(hvor, 'likningen har løsninger likevel', o)
+      return
+    }
     for (const x of losninger) if (!nesten(regn(v, { x }), regn(h, { x }))) klage(hvor, `x = ${x} stemmer ikke`, o)
     return
   }
@@ -180,11 +188,23 @@ for (const tema of TEMAER) {
           if (!erRiktig(o.fasit, o.fasit.riktig)) klage(hvor, 'fasit godtas ikke', o)
           if (o.valg.some((x) => x !== o.fasit.riktig && erRiktig(o.fasit, x))) klage(hvor, 'galt valg godtas', o)
         } else {
+          if (o.felt) {
+            if (!o.hint) klage(hvor, 'svarbokser uten forklaring', o)
+            if (o.fasit.verdier.length > o.felt) klage(hvor, 'flere løsninger enn bokser', o)
+            // Slik klienten sender boksene: utfylte bokser med «og», ellers «ingen løsning»
+            const bokser = o.fasit.verdier.map(String)
+            if (!erRiktig(o.fasit, bokser.length ? bokser.join(' og ') : 'ingen løsning')) klage(hvor, 'riktige bokser godtas ikke', o)
+            if (o.fasit.verdier.length === 1 && !erRiktig(o.fasit, `${bokser[0]} og ${bokser[0]}`)) klage(hvor, 'samme løsning i begge boksene godtas ikke', o)
+            if (o.fasit.verdier.length && erRiktig(o.fasit, 'ingen løsning')) klage(hvor, '«ingen løsning» godtas', o)
+            if (!o.fasit.verdier.length && erRiktig(o.fasit, '0')) klage(hvor, 'tall godtas når det ikke er løsning', o)
+            if (o.fasit.verdier.length === 2 && erRiktig(o.fasit, bokser[0])) klage(hvor, 'bare én av to løsninger godtas', o)
+          }
           const svar = o.fasit.verdier.map((x) => String(Math.round(x * 1000) / 1000).replace('.', ',')).join(' og ')
           if (o.fasit.verdier.some((x) => !Number.isFinite(x))) klage(hvor, 'ugyldig fasit', o)
           if (!erRiktig(o.fasit, svar)) klage(hvor, `svaret «${svar}» godtas ikke`, o)
+          if (!o.felt && o.fasit.verdier.length > 1) klage(hvor, 'flere løsninger uten svarbokser', o)
           if (!erRiktig(o.fasit, o.fasit.tekst.replace(/ (cm|kroner|meter|enheter|sekunder)$/, '').replace(/^Etter /, '').replace(/ \(D = .*\)$/, ''))) klage(hvor, 'fasitteksten godtas ikke', o)
-          if (erRiktig(o.fasit, o.fasit.verdier.map((x) => x + 1).join(' og '))) klage(hvor, 'galt svar godtas', o)
+          if (o.fasit.verdier.length && erRiktig(o.fasit, o.fasit.verdier.map((x) => x + 1).join(' og '))) klage(hvor, 'galt svar godtas', o)
         }
         try {
           if (sjekkMatte(hvor, o) === 'manuelt') manuelt = true

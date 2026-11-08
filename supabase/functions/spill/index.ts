@@ -70,7 +70,7 @@ async function nyOppgave(spiller: string, niva: unknown) {
     .single()
   if (error) return rpcSvar(null, error)
 
-  return svar(200, { id: data.id, tema, sporsmal: oppgave.sporsmal, valg: oppgave.valg ?? null, hint: oppgave.hint ?? null })
+  return svar(200, { id: data.id, tema, sporsmal: oppgave.sporsmal, valg: oppgave.valg ?? null, hint: oppgave.hint ?? null, felt: oppgave.felt ?? null })
 }
 
 async function svarPaOppgave(spiller: string, id: unknown, svarTekst: unknown) {

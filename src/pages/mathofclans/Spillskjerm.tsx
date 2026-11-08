@@ -151,7 +151,7 @@ export default function Spillskjerm({ tilstand, spillerId, handling, settStatus,
     } else if (data.avskutt) {
       setSvar({ riktig: false, tekst: `Nuken ble skutt ned over ${navn}. Området hadde missilforsvar!` })
     } else {
-      setSvar({ riktig: true, tekst: `Treff! ${navn} mistet 80 % av troppene.` })
+      setSvar({ riktig: true, tekst: `Treff! ${navn} er utslettet, og naboområdene mistet halvparten av troppene.` })
     }
   }
 
@@ -362,7 +362,7 @@ function Kontrollinje({
       vedKlikk: kjopSoldater,
     },
     {
-      navn: `Nuke, ${PRIS.nuke} gull. Tar 80 % av troppene i et område, hvor som helst på kartet.`,
+      navn: `Nuke, ${PRIS.nuke} gull. Utsletter et område hvor som helst på kartet, så det blir nøytralt, og naboområdene mister halvparten av troppene.`,
       ikon: <IkonNuke />,
       pris: PRIS.nuke,
       mulig: kanSikte.nuke,
@@ -510,7 +510,7 @@ function OppgaveTema({ tema, bonus }: { tema: string; bonus: boolean }) {
   )
 }
 
-type AktivOppgave = { id: string; tema: string; sporsmal: string; valg: string[] | null; hint: string | null }
+type AktivOppgave = { id: string; tema: string; sporsmal: string; valg: string[] | null; hint: string | null; felt: number | null }
 type Tilbakemelding = { riktig: boolean; tekst: string }
 
 function Oppgavepanel({
@@ -528,7 +528,8 @@ function Oppgavepanel({
 }) {
   const [niva, setNiva] = useState(1)
   const [oppgave, setOppgave] = useState<AktivOppgave | null>(null)
-  const [svar, setSvar] = useState('')
+  // Én tekst per svarboks. Likninger med flere løsninger får flere bokser.
+  const [svar, setSvar] = useState<string[]>([''])
   const [tilbakemelding, setTilbakemelding] = useState<Tilbakemelding | null>(null)
   const [feil, setFeil] = useState('')
   const [venter, setVenter] = useState(false)
@@ -544,7 +545,6 @@ function Oppgavepanel({
   async function hentOppgave() {
     setVenter(true)
     setFeil('')
-    setSvar('')
     const { data, feil: feilmelding } = await handling({ handling: 'ny-oppgave', niva })
     setVenter(false)
     if (feilmelding || !data) {
@@ -552,7 +552,9 @@ function Oppgavepanel({
       setFeil(feilmelding ?? 'Noe gikk galt.')
       return
     }
-    setOppgave(data as unknown as AktivOppgave)
+    const ny = data as unknown as AktivOppgave
+    setSvar(Array(ny.felt ?? 1).fill(''))
+    setOppgave(ny)
     requestAnimationFrame(() => svarfelt.current?.focus())
   }
 
@@ -628,22 +630,50 @@ function Oppgavepanel({
             <form
               onSubmit={(e) => {
                 e.preventDefault()
-                void sendSvar(svar)
+                if (!oppgave.felt) return void sendSvar(svar[0])
+                // Tomme bokser betyr færre løsninger, og ingen utfylte bokser betyr ingen løsning
+                const utfylt = svar.map((s) => s.trim()).filter(Boolean)
+                void sendSvar(utfylt.length ? utfylt.join(' og ') : 'ingen løsning')
               }}
             >
               {oppgave.hint && <label htmlFor="moc-svar">{oppgave.hint}</label>}
               <div className="moc-felt-rad">
-                <input
-                  id="moc-svar"
-                  ref={svarfelt}
-                  type="text"
-                  autoComplete="off"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  required
-                  value={svar}
-                  onChange={(e) => setSvar(e.target.value)}
-                />
+                {oppgave.felt ? (
+                  <div className="moc-svarbokser">
+                    {svar.map((verdi, i) => (
+                      <div key={i} className="moc-svarboks">
+                        <span className="moc-matte" aria-hidden="true">
+                          <i className="moc-v">x</i>
+                          <sub>{i + 1}</sub> =
+                        </span>
+                        <input
+                          id={i === 0 ? 'moc-svar' : undefined}
+                          ref={i === 0 ? svarfelt : undefined}
+                          aria-label={`Løsning ${i + 1}`}
+                          type="text"
+                          inputMode="text"
+                          autoComplete="off"
+                          autoCapitalize="none"
+                          spellCheck={false}
+                          value={verdi}
+                          onChange={(e) => setSvar(svar.map((s, j) => (j === i ? e.target.value : s)))}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <input
+                    id="moc-svar"
+                    ref={svarfelt}
+                    type="text"
+                    autoComplete="off"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    required
+                    value={svar[0]}
+                    onChange={(e) => setSvar([e.target.value])}
+                  />
+                )}
                 <button type="submit" className="moc-knapp moc-knapp-rad" disabled={venter}>
                   Svar
                 </button>
