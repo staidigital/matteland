@@ -16,6 +16,7 @@ import { LYSBILDER as funksjoner } from './funksjoner/lysbildeliste'
 import { LYSBILDER as skjaeringspunkter } from './skjaeringspunkter/lysbildeliste'
 import { LYSBILDER as lineare } from './lineare/lysbildeliste'
 import { LYSBILDER as polynomfunksjoner } from './polynomfunksjoner/lysbildeliste'
+import { LYSBILDER as eksponentialfunksjoner } from './eksponentialfunksjoner/lysbildeliste'
 
 const inndelinger = [
   {
@@ -132,6 +133,12 @@ const inndelinger = [
         tittel: 'Polynomfunksjoner',
         tekst: 'Parabler og kurver som snur. Vi finner symmetrilinjer, topp- og bunnpunkter og nullpunkter.',
         antall: polynomfunksjoner.length,
+      },
+      {
+        path: 'eksponentialfunksjoner',
+        tittel: 'Eksponentialfunksjoner',
+        tekst: 'Vekst og nedgang med like mange prosent hver gang. Startverdien og vekstfaktoren bestemmer grafen.',
+        antall: eksponentialfunksjoner.length,
       },
     ],
   },
