@@ -17,6 +17,7 @@ import { LYSBILDER as skjaeringspunkter } from './skjaeringspunkter/lysbildelist
 import { LYSBILDER as lineare } from './lineare/lysbildeliste'
 import { LYSBILDER as polynomfunksjoner } from './polynomfunksjoner/lysbildeliste'
 import { LYSBILDER as eksponentialfunksjoner } from './eksponentialfunksjoner/lysbildeliste'
+import { LYSBILDER as potensRot } from './potensrot/lysbildeliste'
 
 const inndelinger = [
   {
@@ -139,6 +140,12 @@ const inndelinger = [
         tittel: 'Eksponentialfunksjoner',
         tekst: 'Vekst og nedgang med like mange prosent hver gang. Startverdien og vekstfaktoren bestemmer grafen.',
         antall: eksponentialfunksjoner.length,
+      },
+      {
+        path: 'potens-og-rotfunksjoner',
+        tittel: 'Potens- og rotfunksjoner',
+        tekst: 'Variabelen i grunntallet eller under rottegnet. Eksponenten bestemmer formen, og rota bestemmer hvor funksjonen er definert.',
+        antall: potensRot.length,
       },
     ],
   },
