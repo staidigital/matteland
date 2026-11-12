@@ -44,6 +44,7 @@ const TYPENAVN: Record<string, string> = {
   bool: 'sann/usann',
   list: 'liste',
   function: 'funksjon',
+  NoneType: 'ingenting',
 };
 
 const Variabeltabell: React.FC<{ variabler: Variabel[]; forrige?: Variabel[] }> = ({ variabler, forrige }) => {

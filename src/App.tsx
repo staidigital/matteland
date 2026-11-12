@@ -31,6 +31,7 @@ import RegningOgPrint from './pages/1t/programmering/regning/RegningOgPrint.tsx'
 import Variabler from './pages/1t/programmering/variabler/Variabler.tsx'
 import IfSetninger from './pages/1t/programmering/ifsetninger/IfSetninger.tsx'
 import Lokker from './pages/1t/programmering/lokker/Lokker.tsx'
+import PyFunksjoner from './pages/1t/programmering/pyfunksjoner/PyFunksjoner.tsx'
 
 // Lastes for seg, så resten av siden slipper å laste ned Supabase
 const MathOfClans = lazy(() => import('./pages/mathofclans/MathOfClans.tsx'))
@@ -87,6 +88,7 @@ export default function App() {
         <Route path="1t/variabler" element={<Variabler />} />
         <Route path="1t/if-setninger" element={<IfSetninger />} />
         <Route path="1t/lokker" element={<Lokker />} />
+        <Route path="1t/python-funksjoner" element={<PyFunksjoner />} />
         <Route path="1t/formler" element={<Formler />} />
       </Routes>
       <Analytics />

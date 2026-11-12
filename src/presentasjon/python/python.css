@@ -40,8 +40,10 @@
 
 /* Utskrift og variabler */
 .py-under { display: grid; grid-template-columns: 1fr; gap: 10px; }
+/* Variablene står ved siden av konsollen bare når kodeboksen er bred nok */
+.py { container-type: inline-size; }
 .py-under.med-var { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
-@media (max-width: 700px) { .py-under.med-var { grid-template-columns: 1fr; } }
+@container (max-width: 620px) { .py-under.med-var { grid-template-columns: 1fr; } }
 .py-etikett { font-size: 0.68em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 4px; }
 .py-ut, .py-var { background: var(--paper); border: 1px dashed var(--line); border-radius: 8px; padding: 10px 14px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .py-ut pre, .py-res { font-family: var(--f-kode); font-size: 0.95em; line-height: 1.5; margin: 0; white-space: pre-wrap; word-break: break-word; min-height: 1.5em; }

@@ -40,7 +40,7 @@ export type FraArbeider =
   | ({ type: 'ferdig'; id: number } & Resultat);
 
 const OPPSETT = String.raw`
-import sys, builtins, time, traceback, types, warnings
+import sys, builtins, inspect, time, traceback, types, warnings
 
 class _TrengerInndata(BaseException): pass
 class _ForMyeUtskrift(BaseException): pass
@@ -80,7 +80,10 @@ def _verdier(ns):
         if k.startswith('_') or isinstance(v, _SKJULT):
             continue
         if isinstance(v, types.FunctionType):
-            r = 'funksjon'
+            try:
+                r = 'def ' + v.__name__ + str(inspect.signature(v))
+            except Exception:
+                r = 'def ' + v.__name__
         else:
             try:
                 r = repr(v)
@@ -96,7 +99,12 @@ def _lag_sporer(steg, skriver, filnavn):
         if ramme.f_code.co_filename != filnavn:
             return None
         if hendelse == 'line' and len(steg) < _MAKS_STEG:
-            steg.append([ramme.f_lineno, _verdier(ramme.f_globals), skriver.antall])
+            v = _verdier(ramme.f_globals)
+            navn = ramme.f_code.co_name
+            # Inne i en funksjon vises også de lokale variablene, merket med funksjonsnavnet
+            if navn != '<module>':
+                v += [[k + ' (i ' + navn + ')', r, t] for k, r, t in _verdier(ramme.f_locals)]
+            steg.append([ramme.f_lineno, v, skriver.antall])
         return sporer
     return sporer
 

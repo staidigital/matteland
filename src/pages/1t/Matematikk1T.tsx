@@ -24,6 +24,7 @@ import { LYSBILDER as regningOgPrint } from './programmering/regning/lysbildelis
 import { LYSBILDER as variabler } from './programmering/variabler/lysbildeliste'
 import { LYSBILDER as ifSetninger } from './programmering/ifsetninger/lysbildeliste'
 import { LYSBILDER as lokker } from './programmering/lokker/lysbildeliste'
+import { LYSBILDER as pyFunksjoner } from './programmering/pyfunksjoner/lysbildeliste'
 
 const inndelinger = [
   {
@@ -193,6 +194,12 @@ const inndelinger = [
         tittel: 'Løkker',
         tekst: 'Gjenta med for og while. Verditabeller, summer, primtall og hvor lang tid det tar før et beløp er doblet.',
         antall: lokker.length,
+      },
+      {
+        path: 'python-funksjoner',
+        tittel: 'Funksjoner i Python',
+        tekst: 'Lag dine egne funksjoner med def og return. Formler som kan brukes om igjen, og nullpunkter funnet med små steg.',
+        antall: pyFunksjoner.length,
       },
     ],
   },
