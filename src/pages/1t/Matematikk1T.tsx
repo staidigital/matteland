@@ -19,6 +19,7 @@ import { LYSBILDER as polynomfunksjoner } from './polynomfunksjoner/lysbildelist
 import { LYSBILDER as eksponentialfunksjoner } from './eksponentialfunksjoner/lysbildeliste'
 import { LYSBILDER as potensRot } from './potensrot/lysbildeliste'
 import { LYSBILDER as rasjonale } from './rasjonale/lysbildeliste'
+import { LYSBILDER as regresjon } from './regresjon/lysbildeliste'
 
 const inndelinger = [
   {
@@ -153,6 +154,12 @@ const inndelinger = [
         tittel: 'Rasjonale funksjoner',
         tekst: 'Brøker med polynom i teller og nevner. Grafen er en hyperbel som nærmer seg to asymptoter.',
         antall: rasjonale.length,
+      },
+      {
+        path: 'modellering-og-regresjon',
+        tittel: 'Modellering og regresjon',
+        tekst: 'Fra målinger til funksjon. Spredningsdiagram, regresjon i GeoGebra og valg av modell.',
+        antall: regresjon.length,
       },
     ],
   },

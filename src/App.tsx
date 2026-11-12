@@ -25,6 +25,7 @@ import Polynomfunksjoner from './pages/1t/polynomfunksjoner/Polynomfunksjoner.ts
 import Eksponentialfunksjoner from './pages/1t/eksponentialfunksjoner/Eksponentialfunksjoner.tsx'
 import PotensRot from './pages/1t/potensrot/PotensRot.tsx'
 import Rasjonale from './pages/1t/rasjonale/Rasjonale.tsx'
+import Regresjon from './pages/1t/regresjon/Regresjon.tsx'
 import Formler from './pages/1t/formler/Formler.tsx'
 
 // Lastes for seg, så resten av siden slipper å laste ned Supabase
@@ -77,6 +78,7 @@ export default function App() {
         <Route path="1t/eksponentialfunksjoner" element={<Eksponentialfunksjoner />} />
         <Route path="1t/potens-og-rotfunksjoner" element={<PotensRot />} />
         <Route path="1t/rasjonale-funksjoner" element={<Rasjonale />} />
+        <Route path="1t/modellering-og-regresjon" element={<Regresjon />} />
         <Route path="1t/formler" element={<Formler />} />
       </Routes>
       <Analytics />
