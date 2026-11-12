@@ -20,6 +20,11 @@ import { LYSBILDER as eksponentialfunksjoner } from './eksponentialfunksjoner/ly
 import { LYSBILDER as potensRot } from './potensrot/lysbildeliste'
 import { LYSBILDER as rasjonale } from './rasjonale/lysbildeliste'
 import { LYSBILDER as regresjon } from './regresjon/lysbildeliste'
+import { LYSBILDER as regningOgPrint } from './programmering/regning/lysbildeliste'
+import { LYSBILDER as variabler } from './programmering/variabler/lysbildeliste'
+import { LYSBILDER as ifSetninger } from './programmering/ifsetninger/lysbildeliste'
+import { LYSBILDER as lokker } from './programmering/lokker/lysbildeliste'
+import { LYSBILDER as pyFunksjoner } from './programmering/pyfunksjoner/lysbildeliste'
 
 const inndelinger = [
   {
@@ -160,6 +165,41 @@ const inndelinger = [
         tittel: 'Modellering og regresjon',
         tekst: 'Fra målinger til funksjon. Spredningsdiagram, regresjon i GeoGebra og valg av modell.',
         antall: regresjon.length,
+      },
+    ],
+  },
+  {
+    tittel: 'Programmering',
+    temaer: [
+      {
+        path: 'regning-og-print',
+        tittel: 'Regning og print',
+        tekst: 'Våre første Python-program. Regneartene, regnerekkefølge og forskjellen på tekst og utregning.',
+        antall: regningOgPrint.length,
+      },
+      {
+        path: 'variabler',
+        tittel: 'Variabler',
+        tekst: 'Gi verdier et navn, oppdater dem og les inn tall fra brukeren. Se hva som skjer linje for linje.',
+        antall: variabler.length,
+      },
+      {
+        path: 'if-setninger',
+        tittel: 'If-setninger og modulo',
+        tekst: 'Programmet tar valg med if, elif og else. Med modulo finner vi rest, partall og delelighet.',
+        antall: ifSetninger.length,
+      },
+      {
+        path: 'lokker',
+        tittel: 'Løkker',
+        tekst: 'Gjenta med for og while. Verditabeller, summer, primtall og hvor lang tid det tar før et beløp er doblet.',
+        antall: lokker.length,
+      },
+      {
+        path: 'python-funksjoner',
+        tittel: 'Funksjoner i Python',
+        tekst: 'Lag dine egne funksjoner med def og return. Formler som kan brukes om igjen, og nullpunkter funnet med små steg.',
+        antall: pyFunksjoner.length,
       },
     ],
   },
