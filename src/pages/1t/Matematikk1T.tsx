@@ -20,6 +20,8 @@ import { LYSBILDER as eksponentialfunksjoner } from './eksponentialfunksjoner/ly
 import { LYSBILDER as potensRot } from './potensrot/lysbildeliste'
 import { LYSBILDER as rasjonale } from './rasjonale/lysbildeliste'
 import { LYSBILDER as regresjon } from './regresjon/lysbildeliste'
+import { LYSBILDER as regningOgPrint } from './programmering/regning/lysbildeliste'
+import { LYSBILDER as variabler } from './programmering/variabler/lysbildeliste'
 
 const inndelinger = [
   {
@@ -160,6 +162,23 @@ const inndelinger = [
         tittel: 'Modellering og regresjon',
         tekst: 'Fra målinger til funksjon. Spredningsdiagram, regresjon i GeoGebra og valg av modell.',
         antall: regresjon.length,
+      },
+    ],
+  },
+  {
+    tittel: 'Programmering',
+    temaer: [
+      {
+        path: 'regning-og-print',
+        tittel: 'Regning og print',
+        tekst: 'Våre første Python-program. Regneartene, regnerekkefølge og forskjellen på tekst og utregning.',
+        antall: regningOgPrint.length,
+      },
+      {
+        path: 'variabler',
+        tittel: 'Variabler',
+        tekst: 'Gi verdier et navn, oppdater dem og les inn tall fra brukeren. Se hva som skjer linje for linje.',
+        antall: variabler.length,
       },
     ],
   },

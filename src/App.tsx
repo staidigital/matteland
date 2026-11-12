@@ -27,6 +27,8 @@ import PotensRot from './pages/1t/potensrot/PotensRot.tsx'
 import Rasjonale from './pages/1t/rasjonale/Rasjonale.tsx'
 import Regresjon from './pages/1t/regresjon/Regresjon.tsx'
 import Formler from './pages/1t/formler/Formler.tsx'
+import RegningOgPrint from './pages/1t/programmering/regning/RegningOgPrint.tsx'
+import Variabler from './pages/1t/programmering/variabler/Variabler.tsx'
 
 // Lastes for seg, så resten av siden slipper å laste ned Supabase
 const MathOfClans = lazy(() => import('./pages/mathofclans/MathOfClans.tsx'))
@@ -79,6 +81,8 @@ export default function App() {
         <Route path="1t/potens-og-rotfunksjoner" element={<PotensRot />} />
         <Route path="1t/rasjonale-funksjoner" element={<Rasjonale />} />
         <Route path="1t/modellering-og-regresjon" element={<Regresjon />} />
+        <Route path="1t/regning-og-print" element={<RegningOgPrint />} />
+        <Route path="1t/variabler" element={<Variabler />} />
         <Route path="1t/formler" element={<Formler />} />
       </Routes>
       <Analytics />
