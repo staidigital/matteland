@@ -22,6 +22,7 @@ import { LYSBILDER as rasjonale } from './rasjonale/lysbildeliste'
 import { LYSBILDER as regresjon } from './regresjon/lysbildeliste'
 import { LYSBILDER as regningOgPrint } from './programmering/regning/lysbildeliste'
 import { LYSBILDER as variabler } from './programmering/variabler/lysbildeliste'
+import { LYSBILDER as ifSetninger } from './programmering/ifsetninger/lysbildeliste'
 
 const inndelinger = [
   {
@@ -179,6 +180,12 @@ const inndelinger = [
         tittel: 'Variabler',
         tekst: 'Gi verdier et navn, oppdater dem og les inn tall fra brukeren. Se hva som skjer linje for linje.',
         antall: variabler.length,
+      },
+      {
+        path: 'if-setninger',
+        tittel: 'If-setninger og modulo',
+        tekst: 'Programmet tar valg med if, elif og else. Med modulo finner vi rest, partall og delelighet.',
+        antall: ifSetninger.length,
       },
     ],
   },

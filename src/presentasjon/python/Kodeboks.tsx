@@ -80,6 +80,15 @@ function settInn(ta: HTMLTextAreaElement, s: string, oppdater: (v: string) => vo
   }
 }
 
+/** Sletter tegnene fra og med `fra` til `til` */
+function slett(ta: HTMLTextAreaElement, fra: number, til: number, oppdater: (v: string) => void) {
+  ta.setSelectionRange(fra, til);
+  if (!document.execCommand('delete')) {
+    ta.setRangeText('', fra, til, 'end');
+    oppdater(ta.value);
+  }
+}
+
 /* ---------- kodeboksen ---------- */
 
 type Props = {
@@ -174,13 +183,32 @@ export const Kodeboks: React.FC<Props> = ({ kode, fil = 'program.py', variabler,
       esc.current = true;
       return;
     }
-    // Tab rykker inn. Trykk Esc først for å hoppe ut av editoren med Tab.
-    if (e.key === 'Tab' && !e.shiftKey && !esc.current) {
+    const pos = el.selectionStart;
+    const linjestart = el.value.lastIndexOf('\n', pos - 1) + 1;
+    // Tab rykker inn, Shift + Tab rykker ut. Trykk Esc først for å hoppe ut av editoren med Tab.
+    if (e.key === 'Tab' && !esc.current) {
       e.preventDefault();
-      settInn(el, '    ', endre);
+      if (!e.shiftKey) settInn(el, '    ', endre);
+      else {
+        const n = /^ {0,4}/.exec(el.value.slice(linjestart))![0].length;
+        if (n > 0) {
+          slett(el, linjestart, linjestart + n, endre);
+          const ny = Math.max(linjestart, pos - n);
+          el.setSelectionRange(ny, ny);
+        }
+      }
       return;
     }
     esc.current = false;
+    // Backspace i innrykket fjerner et helt innrykk (fire mellomrom)
+    if (e.key === 'Backspace' && pos === el.selectionEnd && pos > linjestart) {
+      const foran = el.value.slice(linjestart, pos);
+      if (/^ +$/.test(foran)) {
+        e.preventDefault();
+        slett(el, pos - (foran.length % 4 || 4), pos, endre);
+        return;
+      }
+    }
     if (e.key === 'Enter' && !e.shiftKey && !e.altKey) {
       const start = el.value.lastIndexOf('\n', el.selectionStart - 1) + 1;
       const linje = el.value.slice(start, el.selectionStart);

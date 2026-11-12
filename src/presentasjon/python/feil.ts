@@ -11,8 +11,15 @@ export function forklarFeil(type: string, melding: string): string {
       return 'Fikk ikke lastet Python. Python hentes fra nettet første gang, så sjekk at du er på nett og last inn siden på nytt.';
     case 'IndentationError':
     case 'TabError':
+      if (/expected an indented block/.test(melding))
+        return 'Linja etter et kolon må ha innrykk (fire mellomrom), så Python vet hva som hører til.';
+      if (/unexpected indent/.test(melding)) return 'Linja har innrykk, men den hører ikke til en if eller lignende.';
       return 'Innrykket stemmer ikke. Linjer som hører sammen, må starte like langt inn.';
     case 'SyntaxError':
+      if (/Maybe you meant '=='/.test(melding))
+        return 'Bruk == når du skal sammenligne. Ett = gir en variabel en verdi.';
+      if (/expected ':'/.test(melding))
+        return 'Det mangler et kolon på slutten av linja. Står det et vilkår etter else, skal det være elif.';
       if (/never closed|was not closed|unmatched|does not match/.test(melding))
         return 'En parentes er ikke lukket, eller det er en parentes for mye. Tell parentesene.';
       if (/unterminated string/.test(melding)) return 'Teksten mangler anførselstegn på slutten.';
