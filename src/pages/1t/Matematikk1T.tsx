@@ -18,6 +18,7 @@ import { LYSBILDER as lineare } from './lineare/lysbildeliste'
 import { LYSBILDER as polynomfunksjoner } from './polynomfunksjoner/lysbildeliste'
 import { LYSBILDER as eksponentialfunksjoner } from './eksponentialfunksjoner/lysbildeliste'
 import { LYSBILDER as potensRot } from './potensrot/lysbildeliste'
+import { LYSBILDER as rasjonale } from './rasjonale/lysbildeliste'
 
 const inndelinger = [
   {
@@ -146,6 +147,12 @@ const inndelinger = [
         tittel: 'Potens- og rotfunksjoner',
         tekst: 'Variabelen i grunntallet eller under rottegnet. Eksponenten bestemmer formen, og rota bestemmer hvor funksjonen er definert.',
         antall: potensRot.length,
+      },
+      {
+        path: 'rasjonale-funksjoner',
+        tittel: 'Rasjonale funksjoner',
+        tekst: 'Brøker med polynom i teller og nevner. Grafen er en hyperbel som nærmer seg to asymptoter.',
+        antall: rasjonale.length,
       },
     ],
   },
