@@ -23,6 +23,7 @@ import { LYSBILDER as regresjon } from './regresjon/lysbildeliste'
 import { LYSBILDER as regningOgPrint } from './programmering/regning/lysbildeliste'
 import { LYSBILDER as variabler } from './programmering/variabler/lysbildeliste'
 import { LYSBILDER as ifSetninger } from './programmering/ifsetninger/lysbildeliste'
+import { LYSBILDER as lokker } from './programmering/lokker/lysbildeliste'
 
 const inndelinger = [
   {
@@ -186,6 +187,12 @@ const inndelinger = [
         tittel: 'If-setninger og modulo',
         tekst: 'Programmet tar valg med if, elif og else. Med modulo finner vi rest, partall og delelighet.',
         antall: ifSetninger.length,
+      },
+      {
+        path: 'lokker',
+        tittel: 'Løkker',
+        tekst: 'Gjenta med for og while. Verditabeller, summer, primtall og hvor lang tid det tar før et beløp er doblet.',
+        antall: lokker.length,
       },
     ],
   },
