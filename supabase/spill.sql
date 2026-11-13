@@ -2,6 +2,7 @@
 
 create table public.clans (
   id uuid primary key default gen_random_uuid(),
+  room_id uuid not null references public.rooms (id) on delete cascade,
   name text not null,
   color text not null
 );
@@ -21,8 +22,10 @@ create table public.regions (
   neighbors text[] not null default '{}'
 );
 
+-- Hvert rom har sin egen runde, så flere rom kan spille samtidig
 create table public.rounds (
   id uuid primary key default gen_random_uuid(),
+  room_id uuid not null references public.rooms (id) on delete cascade,
   started_at timestamptz not null default now(),
   ends_at timestamptz not null
 );
@@ -70,7 +73,7 @@ create table public.round_events (
 );
 create index on public.round_events (round_id, created_at desc);
 
--- Tilgang: innloggede kan lese spilltilstanden. All skriving går via Edge Functions.
+-- Tilgang: innloggede kan lese spilltilstanden i sitt eget rom. All skriving går via Edge Functions.
 alter table public.clans enable row level security;
 alter table public.regions enable row level security;
 alter table public.rounds enable row level security;
@@ -79,16 +82,20 @@ alter table public.player_stats enable row level security;
 alter table public.tasks enable row level security;
 alter table public.round_events enable row level security;
 
-create policy "Innloggede leser" on public.clans for select to authenticated using (true);
 create policy "Innloggede leser" on public.regions for select to authenticated using (true);
-create policy "Innloggede leser" on public.rounds for select to authenticated using (true);
-create policy "Innloggede leser" on public.round_regions for select to authenticated using (true);
-create policy "Innloggede leser" on public.player_stats for select to authenticated using (true);
-create policy "Innloggede leser" on public.round_events for select to authenticated using (true);
 
--- Klanene skal kunne se hvem som er med på hvilket lag. Passordene ligger i en egen tabell.
-drop policy "Spiller ser seg selv, admin ser alle" on public.players;
-create policy "Innloggede leser" on public.players for select to authenticated using (true);
+create policy "Eget rom, hovedadmin ser alle" on public.clans for select to authenticated
+  using (public.is_admin() or room_id = (select public.moc_my_room()));
+create policy "Eget rom, hovedadmin ser alle" on public.rounds for select to authenticated
+  using (public.is_admin() or room_id = (select public.moc_my_room()));
+
+-- Følger tilgangen til runden: underspørringen gir bare treff på runder den innloggede får lese
+create policy "Runder i eget rom" on public.round_regions for select to authenticated
+  using (exists (select 1 from public.rounds r where r.id = round_id));
+create policy "Runder i eget rom" on public.player_stats for select to authenticated
+  using (exists (select 1 from public.rounds r where r.id = round_id));
+create policy "Runder i eget rom" on public.round_events for select to authenticated
+  using (exists (select 1 from public.rounds r where r.id = round_id));
 
 revoke all on
   public.clans, public.regions, public.rounds, public.round_regions,
@@ -107,8 +114,20 @@ to service_role;
 
 alter publication supabase_realtime add table public.rounds, public.round_regions, public.round_events;
 
--- Starter en ny runde. Forrige runde slettes.
-create function public.moc_start_round(p_minutes integer)
+-- Runden som pågår i rommet til spilleren, eller null
+create function public.moc_active_round(p_player uuid)
+returns uuid
+language sql
+stable
+set search_path = ''
+as $$
+  select r.id from public.rounds r
+    join public.players p on p.room_id = r.room_id
+    where p.id = p_player and r.ends_at > now()
+$$;
+
+-- Starter en ny runde i rommet. Forrige runde i rommet slettes. Andre rom berøres ikke.
+create function public.moc_start_round(p_room uuid, p_minutes integer)
 returns uuid
 language plpgsql
 set search_path = ''
@@ -117,15 +136,22 @@ declare
   v_round uuid;
   v_clans integer;
 begin
-  if exists (select 1 from public.rounds where ends_at > now()) then
+  -- Hindrer at to samtidige kall starter hver sin runde i samme rom
+  perform 1 from public.rooms where id = p_room for update;
+  if not found then
+    raise exception 'Fant ikke rommet.' using errcode = 'P0001';
+  end if;
+  if exists (select 1 from public.rounds where room_id = p_room and ends_at > now()) then
     raise exception 'En runde er allerede i gang.' using errcode = 'P0001';
   end if;
 
   -- Spillere som er valgt bort, er ikke med. Klaner de etterlater tomme, skal ikke få område på kartet.
-  update public.players set clan_id = null where not in_next_round and clan_id is not null;
-  delete from public.clans c where not exists (select 1 from public.players p where p.clan_id = c.id);
+  update public.players set clan_id = null
+    where room_id = p_room and not in_next_round and clan_id is not null;
+  delete from public.clans c
+    where c.room_id = p_room and not exists (select 1 from public.players p where p.clan_id = c.id);
 
-  select count(*) into v_clans from public.clans;
+  select count(*) into v_clans from public.clans where room_id = p_room;
   if v_clans = 0 then
     raise exception 'Fordel spillerne på klaner først.' using errcode = 'P0001';
   end if;
@@ -133,9 +159,9 @@ begin
     raise exception 'Det er for mange klaner til kartet.' using errcode = 'P0001';
   end if;
 
-  delete from public.rounds where true;
-  insert into public.rounds (ends_at)
-    values (now() + make_interval(mins => p_minutes))
+  delete from public.rounds where room_id = p_room;
+  insert into public.rounds (room_id, ends_at)
+    values (p_room, now() + make_interval(mins => p_minutes))
     returning id into v_round;
 
   insert into public.round_regions (round_id, region_id, defenders)
@@ -146,24 +172,24 @@ begin
     from (
       select r.id as region_id, c.id as clan_id
       from (select id, row_number() over (order by start_order) as nr from public.regions where start_order is not null) r
-      join (select id, row_number() over (order by name) as nr from public.clans) c on c.nr = r.nr
+      join (select id, row_number() over (order by name) as nr from public.clans where room_id = p_room) c on c.nr = r.nr
     ) s
     where rr.round_id = v_round and rr.region_id = s.region_id;
 
   insert into public.player_stats (round_id, player_id, soldiers)
-    select v_round, id, 20 from public.players where clan_id is not null;
+    select v_round, id, 20 from public.players where room_id = p_room and clan_id is not null;
 
   insert into public.round_events (round_id, message) values (v_round, 'Runden har startet!');
   return v_round;
 end;
 $$;
 
-create function public.moc_end_round()
+create function public.moc_end_round(p_room uuid)
 returns void
 language sql
 set search_path = ''
 as $$
-  update public.rounds set ends_at = now() where ends_at > now();
+  update public.rounds set ends_at = now() where room_id = p_room and ends_at > now();
 $$;
 
 -- Registrerer et svar. Bare ubesvarte oppgaver teller, så samme svar kan ikke sendes inn to ganger.
@@ -247,7 +273,7 @@ declare
   v_strength integer;
   v_captured boolean;
 begin
-  select id into v_round from public.rounds where ends_at > now();
+  v_round := public.moc_active_round(p_player);
   if v_round is null then
     raise exception 'Ingen runde er i gang.' using errcode = 'P0001';
   end if;
@@ -317,7 +343,7 @@ declare
   v_clan uuid;
   v_stats public.player_stats;
 begin
-  select id into v_round from public.rounds where ends_at > now();
+  v_round := public.moc_active_round(p_player);
   if v_round is null then
     raise exception 'Ingen runde er i gang.' using errcode = 'P0001';
   end if;
@@ -345,13 +371,13 @@ $$;
 
 -- Funksjonene stoler på spiller-id-en de får, så bare Edge Functions får kalle dem
 revoke execute on function
-  public.moc_start_round(integer), public.moc_end_round(),
+  public.moc_active_round(uuid), public.moc_start_round(uuid, integer), public.moc_end_round(uuid),
   public.moc_answer(uuid, uuid, boolean), public.moc_attack(uuid, text, integer),
   public.moc_fortify(uuid, text, integer)
 from public, anon, authenticated;
 
 grant execute on function
-  public.moc_start_round(integer), public.moc_end_round(),
+  public.moc_active_round(uuid), public.moc_start_round(uuid, integer), public.moc_end_round(uuid),
   public.moc_answer(uuid, uuid, boolean), public.moc_attack(uuid, text, integer),
   public.moc_fortify(uuid, text, integer)
 to service_role;
@@ -407,7 +433,7 @@ declare
   v_round uuid;
   v_stats public.player_stats;
 begin
-  select id into v_round from public.rounds where ends_at > now();
+  v_round := public.moc_active_round(p_player);
   if v_round is null then
     raise exception 'Ingen runde er i gang.' using errcode = 'P0001';
   end if;
@@ -444,7 +470,7 @@ declare
   v_stats public.player_stats;
   v_intercepted boolean;
 begin
-  select id into v_round from public.rounds where ends_at > now();
+  v_round := public.moc_active_round(p_player);
   if v_round is null then
     raise exception 'Ingen runde er i gang.' using errcode = 'P0001';
   end if;
@@ -511,7 +537,7 @@ declare
   v_clan uuid;
   v_stats public.player_stats;
 begin
-  select id into v_round from public.rounds where ends_at > now();
+  v_round := public.moc_active_round(p_player);
   if v_round is null then
     raise exception 'Ingen runde er i gang.' using errcode = 'P0001';
   end if;

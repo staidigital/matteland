@@ -976,3 +976,17 @@
   border: 1px solid var(--line);
   border-radius: 6px;
 }
+
+/* Romoversikten til hovedadmin */
+.moc-rom {
+  margin-top: 0;
+}
+
+.moc-rom-status {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.site-main .moc-admin-romnavn {
+  margin: clamp(28px, 5vh, 44px) 0 0;
+}

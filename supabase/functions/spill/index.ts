@@ -29,10 +29,16 @@ function rpcSvar(data: unknown, error: { code?: string; message: string } | null
   return svar(500, { feil: 'Noe gikk galt på serveren.' })
 }
 
-async function nyOppgave(spiller: string, niva: unknown) {
+async function nyOppgave(spiller: string, rom: string, niva: unknown) {
   if (![1, 2, 3].includes(niva as number)) return svar(400, { feil: 'Ukjent nivå.' })
 
-  const { data: runde } = await db.from('rounds').select('id').gt('ends_at', new Date().toISOString()).maybeSingle()
+  // Hvert rom har sin egen runde
+  const { data: runde } = await db
+    .from('rounds')
+    .select('id')
+    .eq('room_id', rom)
+    .gt('ends_at', new Date().toISOString())
+    .maybeSingle()
   if (!runde) return svar(400, { feil: 'Ingen runde er i gang.' })
 
   const { data: status } = await db
@@ -101,7 +107,7 @@ Deno.serve(async (req) => {
   if (brukerFeil || !bruker.user) return svar(401, { feil: 'Du må være innlogget.' })
 
   const spiller = bruker.user.id
-  const { data: rad } = await db.from('players').select('clan_id').eq('id', spiller).maybeSingle()
+  const { data: rad } = await db.from('players').select('clan_id, room_id').eq('id', spiller).maybeSingle()
   if (!rad?.clan_id) return svar(403, { feil: 'Du er ikke med i en klan.' })
 
   let innhold: Record<string, unknown>
@@ -113,7 +119,7 @@ Deno.serve(async (req) => {
 
   switch (innhold.handling) {
     case 'ny-oppgave':
-      return nyOppgave(spiller, innhold.niva)
+      return nyOppgave(spiller, rad.room_id, innhold.niva)
     case 'svar':
       return svarPaOppgave(spiller, innhold.id, innhold.svar)
     case 'angrip': {

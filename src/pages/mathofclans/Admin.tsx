@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { FunctionsHttpError } from '@supabase/supabase-js'
-import { erAdmin, supabase, useSesjon } from './supabase.ts'
+import { erHovedadmin, kanAdministrere, supabase, useSesjon } from './supabase.ts'
 import './mathofclans.css'
 
 type Spiller = { id: string; brukernavn: string; passord: string; klan: string | null; med: boolean }
 type Klan = { id: string; name: string }
 type Runde = { ends_at: string }
+type Rom = { id: string; navn: string; eier: string }
 
 const ADJEKTIV = ['rask', 'modig', 'klok', 'sterk', 'stille', 'vill', 'lur', 'glad', 'stolt', 'kjapp', 'tapper', 'sprek']
 const DYR = ['drage', 'ulv', 'ravn', 'bjorn', 'rev', 'orn', 'elg', 'gaupe', 'hauk', 'oter', 'hjort', 'tiger']
@@ -31,15 +32,256 @@ async function kall(innhold: Record<string, unknown>) {
   return 'Fikk ikke kontakt med serveren.'
 }
 
+function klokkeslett(tid: string) {
+  return new Date(tid).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' })
+}
+
 export default function Admin() {
   const sesjon = useSesjon()
 
   if (sesjon === undefined) return null
-  if (!sesjon || !erAdmin(sesjon)) return <Navigate to="/math-of-clans" replace />
-  return <Spilleradministrasjon />
+  if (!sesjon || !kanAdministrere(sesjon)) return <Navigate to="/math-of-clans" replace />
+  return <Administrasjon brukerId={sesjon.user.id} hovedadmin={erHovedadmin(sesjon)} />
 }
 
-function Spilleradministrasjon() {
+/** En lærer ser bare sitt eget rom. Hovedadmin ser alle, og velger hvilket som skal administreres. */
+function Administrasjon({ brukerId, hovedadmin }: { brukerId: string; hovedadmin: boolean }) {
+  const [rom, setRom] = useState<Rom[] | null>(null)
+  const [valgt, setValgt] = useState<string | null>(null)
+  const [feil, setFeil] = useState('')
+  // Økes når spillerne i et rom endres, så romoversikten henter tallene på nytt
+  const [versjon, setVersjon] = useState(0)
+
+  const hentRom = useCallback(async () => {
+    const { data, error } = await supabase.from('rooms').select('id, name, owner_id').order('name')
+    if (error) {
+      setFeil('Kunne ikke hente rommene.')
+      return
+    }
+    setFeil('')
+    setRom(data.map((rad) => ({ id: rad.id, navn: rad.name, eier: rad.owner_id })))
+  }, [])
+
+  useEffect(() => {
+    void hentRom()
+  }, [hentRom])
+
+  const meldEndring = useCallback(() => setVersjon((v) => v + 1), [])
+
+  const aktivt = rom?.find((r) => r.id === valgt) ?? rom?.find((r) => r.eier === brukerId) ?? rom?.[0]
+
+  return (
+    <section className="moc-admin">
+      <div className="kicker">Math of Clans</div>
+      <h1>Administrer</h1>
+      <Link className="moc-lenke" to="/math-of-clans">
+        Tilbake til spillet
+      </Link>
+
+      {feil && (
+        <p className="moc-feil" role="alert">
+          {feil}
+        </p>
+      )}
+
+      {hovedadmin && rom && (
+        <Romoversikt
+          rom={rom}
+          brukerId={brukerId}
+          aktivt={aktivt?.id ?? null}
+          velg={setValgt}
+          hentRom={hentRom}
+          versjon={versjon}
+        />
+      )}
+
+      {rom && !aktivt && <p className="moc-beskjed">Brukeren din har ikke noe rom ennå.</p>}
+
+      {aktivt && (
+        <Spilleradministrasjon
+          key={aktivt.id}
+          rom={aktivt.id}
+          romnavn={hovedadmin ? aktivt.navn : null}
+          meldEndring={meldEndring}
+        />
+      )}
+    </section>
+  )
+}
+
+type RomoversiktProps = {
+  rom: Rom[]
+  brukerId: string
+  aktivt: string | null
+  velg: (id: string) => void
+  hentRom: () => Promise<void>
+  versjon: number
+}
+
+/** Bare for hovedadmin: alle rommene med lærer, antall spillere og runde, og skjema for å opprette nye lærere. */
+function Romoversikt({ rom, brukerId, aktivt, velg, hentRom, versjon }: RomoversiktProps) {
+  const [antall, setAntall] = useState<Map<string, number>>(new Map())
+  const [runder, setRunder] = useState<Map<string, string>>(new Map())
+  const [passordFor, setPassordFor] = useState<Map<string, string>>(new Map())
+  const [brukernavn, setBrukernavn] = useState('')
+  const [passord, setPassord] = useState(lagPassord)
+  const [feil, setFeil] = useState('')
+  const [venter, setVenter] = useState(false)
+
+  const hentOversikt = useCallback(async () => {
+    const [spillerSvar, rundeSvar, passordSvar] = await Promise.all([
+      supabase.from('players').select('room_id'),
+      supabase.from('rounds').select('room_id, ends_at').gt('ends_at', new Date().toISOString()),
+      supabase.from('player_credentials').select('user_id, password_plain'),
+    ])
+    if (spillerSvar.error || rundeSvar.error || passordSvar.error) {
+      setFeil('Kunne ikke hente oversikten over rommene.')
+      return
+    }
+    const teller = new Map<string, number>()
+    for (const rad of spillerSvar.data) teller.set(rad.room_id, (teller.get(rad.room_id) ?? 0) + 1)
+    setAntall(teller)
+    setRunder(new Map(rundeSvar.data.map((rad) => [rad.room_id, rad.ends_at])))
+    setPassordFor(new Map(passordSvar.data.map((rad) => [rad.user_id, rad.password_plain])))
+  }, [])
+
+  useEffect(() => {
+    void hentOversikt()
+  }, [hentOversikt, versjon, rom])
+
+  async function utfor(innhold: Record<string, unknown>) {
+    setVenter(true)
+    setFeil('')
+    const feilmelding = await kall(innhold)
+    if (feilmelding) setFeil(feilmelding)
+    // Henter også etter en feil, for sletting av en lærer kan ha stoppet halvveis
+    await hentRom()
+    await hentOversikt()
+    setVenter(false)
+    return !feilmelding
+  }
+
+  async function opprett(event: FormEvent) {
+    event.preventDefault()
+    if (await utfor({ handling: 'opprett-laerer', brukernavn, passord })) {
+      setBrukernavn('')
+      setPassord(lagPassord())
+    }
+  }
+
+  function byttPassord(r: Rom) {
+    if (window.confirm(`Gi ${r.navn} nytt passord? Det gamle slutter å virke.`)) {
+      void utfor({ handling: 'bytt-laererpassord', rom: r.id, passord: lagPassord() })
+    }
+  }
+
+  function slett(r: Rom) {
+    const spillere = antall.get(r.id) ?? 0
+    const med = spillere > 0 ? ` og de ${spillere} spillerne i rommet` : ''
+    if (window.confirm(`Slette læreren ${r.navn}${med}? Dette kan ikke angres.`)) {
+      void utfor({ handling: 'slett-laerer', rom: r.id })
+    }
+  }
+
+  const totalt = [...antall.values()].reduce((sum, n) => sum + n, 0)
+
+  return (
+    <>
+      <div className="moc-kort">
+        <h2>Rom og lærere</h2>
+        <p className="moc-beskjed">
+          <strong>{totalt}</strong> spillere i <strong>{rom.length}</strong> rom. Velg et rom for å se og styre spillerne der.
+        </p>
+        <ul className="moc-spillere moc-rom">
+          {rom.map((r) => {
+            const eget = r.eier === brukerId
+            const slutter = runder.get(r.id)
+            return (
+              <li key={r.id}>
+                <span className="moc-spiller-info">
+                  <strong>
+                    {r.navn}
+                    {eget && ' (ditt rom)'}
+                  </strong>
+                  {!eget && <code>{passordFor.get(r.eier) ?? ''}</code>}
+                  <span className="moc-rom-status">
+                    {antall.get(r.id) ?? 0} spillere{slutter ? ` · runde pågår til ${klokkeslett(slutter)}` : ''}
+                  </span>
+                </span>
+                <div className="moc-spiller-valg">
+                  <button type="button" className="moc-knapp-liten" aria-pressed={r.id === aktivt} onClick={() => velg(r.id)}>
+                    {r.id === aktivt ? 'Valgt' : 'Velg'}
+                  </button>
+                  {!eget && (
+                    <>
+                      <button type="button" className="moc-knapp-liten" disabled={venter} onClick={() => byttPassord(r)}>
+                        Nytt passord
+                      </button>
+                      <button type="button" className="moc-knapp-liten" disabled={venter} onClick={() => slett(r)}>
+                        Slett
+                      </button>
+                    </>
+                  )}
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+        {feil && (
+          <p className="moc-feil" role="alert">
+            {feil}
+          </p>
+        )}
+      </div>
+
+      <form className="moc-kort" onSubmit={opprett}>
+        <h2>Ny lærer</h2>
+        <p className="moc-beskjed">Læreren får et eget rom, og ser og styrer bare spillerne sine.</p>
+        <label htmlFor="moc-laerer-brukernavn">Brukernavn</label>
+        <input
+          id="moc-laerer-brukernavn"
+          type="text"
+          autoComplete="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          required
+          value={brukernavn}
+          onChange={(e) => setBrukernavn(e.target.value)}
+        />
+
+        <label htmlFor="moc-laerer-passord">Passord</label>
+        <div className="moc-felt-rad">
+          <input
+            id="moc-laerer-passord"
+            type="text"
+            autoComplete="off"
+            spellCheck={false}
+            required
+            minLength={6}
+            value={passord}
+            onChange={(e) => setPassord(e.target.value)}
+          />
+          <button type="button" className="moc-knapp-liten" onClick={() => setPassord(lagPassord())}>
+            Nytt forslag
+          </button>
+        </div>
+
+        <button type="submit" className="moc-knapp" disabled={venter}>
+          Opprett lærer
+        </button>
+      </form>
+    </>
+  )
+}
+
+type SpilleradministrasjonProps = {
+  rom: string
+  /** Vises som overskrift når hovedadmin kan bytte mellom rom. */
+  romnavn: string | null
+  meldEndring: () => void
+}
+
+function Spilleradministrasjon({ rom, romnavn, meldEndring }: SpilleradministrasjonProps) {
   const [spillere, setSpillere] = useState<Spiller[] | null>(null)
   const [klaner, setKlaner] = useState<Klan[]>([])
   const [runde, setRunde] = useState<Runde | null>(null)
@@ -54,10 +296,10 @@ function Spilleradministrasjon() {
   const hentSpillere = useCallback(async () => {
     // Tabellene peker begge på auth.users, så de hentes hver for seg og settes sammen her
     const [spillerSvar, passordSvar, klanSvar, rundeSvar] = await Promise.all([
-      supabase.from('players').select('id, username, clan_id, in_next_round').order('username'),
+      supabase.from('players').select('id, username, clan_id, in_next_round').eq('room_id', rom).order('username'),
       supabase.from('player_credentials').select('user_id, password_plain'),
-      supabase.from('clans').select('id, name').order('name'),
-      supabase.from('rounds').select('ends_at').order('started_at', { ascending: false }).limit(1).maybeSingle(),
+      supabase.from('clans').select('id, name').eq('room_id', rom).order('name'),
+      supabase.from('rounds').select('ends_at').eq('room_id', rom).order('started_at', { ascending: false }).limit(1).maybeSingle(),
     ])
     if (spillerSvar.error || passordSvar.error || klanSvar.error || rundeSvar.error) {
       setFeil('Kunne ikke hente spillerne.')
@@ -75,7 +317,7 @@ function Spilleradministrasjon() {
     )
     setKlaner(klanSvar.data)
     setRunde(rundeSvar.data)
-  }, [])
+  }, [rom])
 
   useEffect(() => {
     void hentSpillere()
@@ -85,9 +327,12 @@ function Spilleradministrasjon() {
   async function utfor(innhold: Record<string, unknown>) {
     setVenter(true)
     setFeil('')
-    const feilmelding = await kall(innhold)
+    const feilmelding = await kall({ ...innhold, rom })
     if (feilmelding) setFeil(feilmelding)
-    else await hentSpillere()
+    else {
+      await hentSpillere()
+      meldEndring()
+    }
     setVenter(false)
     return !feilmelding
   }
@@ -117,7 +362,7 @@ function Spilleradministrasjon() {
     setSpillere((liste) => liste && liste.map((s) => (s.id === spiller.id ? { ...s, med } : s)))
     setFeil('')
     setLagrerValg((antall) => antall + 1)
-    const feilmelding = await kall({ handling: 'sett-med', id: spiller.id, med })
+    const feilmelding = await kall({ handling: 'sett-med', id: spiller.id, med, rom })
     if (feilmelding) {
       setFeil(feilmelding)
       await hentSpillere()
@@ -130,19 +375,15 @@ function Spilleradministrasjon() {
   const utenKlan = deltakere.filter((s) => !s.klan)
 
   return (
-    <section className="moc-admin">
-      <div className="kicker">Math of Clans</div>
-      <h1>Administrer</h1>
-      <Link className="moc-lenke" to="/math-of-clans">
-        Tilbake til spillet
-      </Link>
+    <>
+      {romnavn && <h2 className="moc-admin-romnavn">Rommet {romnavn}</h2>}
 
       <div className="moc-kort">
         <h2>Runde</h2>
         {rundePagar ? (
           <div className="moc-admin-rad">
             <p className="moc-beskjed">
-              Runden slutter klokka {new Date(runde.ends_at).toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' })}.
+              Runden slutter klokka {klokkeslett(runde.ends_at)}.
             </p>
             <button
               type="button"
@@ -300,6 +541,6 @@ function Spilleradministrasjon() {
           ))}
         </ul>
       )}
-    </section>
+    </>
   )
 }
