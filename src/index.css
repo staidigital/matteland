@@ -82,6 +82,12 @@ a {
 }
 
 .inndeling,
+.home-fot {
+  margin-top: clamp(40px, 8vh, 80px);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .home .kort-liste {
   margin-top: clamp(28px, 5vh, 44px);
 }

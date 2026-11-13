@@ -38,6 +38,7 @@ export default function Home() {
           </li>
         </ul>
       </nav>
+      <footer className="home-fot">© 2026 Sondre Stai</footer>
     </section>
   )
 }
