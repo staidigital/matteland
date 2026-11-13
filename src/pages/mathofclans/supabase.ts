@@ -18,9 +18,14 @@ export function tilBrukernavn(session: Session) {
   return session.user.email?.split('@')[0] ?? ''
 }
 
-/** Styrer bare hva som vises. Den egentlige sjekken ligger i RLS og Edge Function. */
-export function erAdmin(session: Session) {
+/** Hovedadmin ser alle rom og oppretter lærere. Styrer bare hva som vises: den egentlige sjekken ligger i RLS og Edge Function. */
+export function erHovedadmin(session: Session) {
   return session.user.app_metadata.role === 'admin'
+}
+
+/** Både hovedadmin og lærere har et eget rom de administrerer. */
+export function kanAdministrere(session: Session) {
+  return erHovedadmin(session) || session.user.app_metadata.role === 'laerer'
 }
 
 /** Gir `undefined` mens sesjonen lastes, og `null` når ingen er innlogget. */

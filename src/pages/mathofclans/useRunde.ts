@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from './supabase.ts'
 
 export type Runde = { id: string; started_at: string; ends_at: string }
@@ -35,17 +35,27 @@ export function useRunde(spillerId: string) {
   const [lastet, setLastet] = useState(false)
   const [feil, setFeil] = useState('')
   const [effekter, setEffekter] = useState<Effekt[]>([])
+  const rundeId = useRef<string | null>(null)
 
   const oppdaterForsvar = useCallback(async () => {
-    const { data } = await supabase.from('round_missile_defenses').select('region_id')
-    if (data) setTilstand((t) => ({ ...t, missilforsvar: data.map((rad) => rad.region_id) }))
+    const { data } = await supabase.from('round_missile_defenses').select('round_id, region_id')
+    if (data) {
+      setTilstand((t) => ({ ...t, missilforsvar: data.filter((rad) => rad.round_id === t.runde?.id).map((rad) => rad.region_id) }))
+    }
   }, [])
 
   const hent = useCallback(async () => {
+    // Hvert rom har sitt eget spill. RLS skjuler de andre rommene, men hovedadmin ser alle og må derfor velge sitt eget.
+    const romSvar = await supabase.rpc('moc_my_room')
+    const rom = romSvar.data as string | null
+    if (romSvar.error || !rom) {
+      setFeil(romSvar.error ? 'Kunne ikke hente spillet. Prøver igjen snart.' : 'Brukeren din hører ikke til noe rom.')
+      return
+    }
     const [rundeSvar, klanSvar, spillerSvar] = await Promise.all([
-      supabase.from('rounds').select('id, started_at, ends_at').order('started_at', { ascending: false }).limit(1).maybeSingle(),
-      supabase.from('clans').select('id, name, color').order('name'),
-      supabase.from('players').select('id, username, clan_id').order('username'),
+      supabase.from('rounds').select('id, started_at, ends_at').eq('room_id', rom).order('started_at', { ascending: false }).limit(1).maybeSingle(),
+      supabase.from('clans').select('id, name, color').eq('room_id', rom).order('name'),
+      supabase.from('players').select('id, username, clan_id').eq('room_id', rom).order('username'),
     ])
     if (rundeSvar.error || klanSvar.error || spillerSvar.error) {
       setFeil('Kunne ikke hente spillet. Prøver igjen snart.')
@@ -62,6 +72,7 @@ export function useRunde(spillerId: string) {
         ])
       : [null, null, null, null]
 
+    rundeId.current = runde?.id ?? null
     setFeil('')
     setTilstand({
       runde,
@@ -83,10 +94,12 @@ export function useRunde(spillerId: string) {
       .channel('math-of-clans')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rounds' }, () => void hent())
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'round_regions' }, ({ new: rad }) => {
-        const omrade = rad as Omradestatus
-        setTilstand((t) => ({ ...t, omrader: { ...t.omrader, [omrade.region_id]: omrade } }))
+        // Hovedadmin får endringer fra alle rom, så bare runden som vises, slipper gjennom
+        const omrade = rad as Omradestatus & { round_id: string }
+        setTilstand((t) => (omrade.round_id === t.runde?.id ? { ...t, omrader: { ...t.omrader, [omrade.region_id]: omrade } } : t))
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'round_events' }, ({ new: rad }) => {
+        if (rad.round_id !== rundeId.current) return
         setTilstand((t) => ({ ...t, hendelser: [rad as Hendelse, ...t.hendelser].slice(0, 8) }))
         const effekt = rad as Effekt
         if (effekt.effect) setEffekter((liste) => [...liste, effekt])

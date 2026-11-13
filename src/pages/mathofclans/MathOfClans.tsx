@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { FunctionsHttpError, type Session } from '@supabase/supabase-js'
 import Spillskjerm, { type Handling } from './Spillskjerm.tsx'
 import { useRunde } from './useRunde.ts'
-import { erAdmin, supabase, tilBrukernavn, tilEpost, useSesjon } from './supabase.ts'
+import { kanAdministrere, supabase, tilBrukernavn, tilEpost, useSesjon } from './supabase.ts'
 import './mathofclans.css'
 
 export default function MathOfClans() {
@@ -41,7 +41,7 @@ function Innlogget({ sesjon }: { sesjon: Session }) {
         <h1>Math of Clans</h1>
         <div className="moc-bruker">
           <span>{tilBrukernavn(sesjon)}</span>
-          {erAdmin(sesjon) && <Link className="moc-lenke" to="/math-of-clans/admin">Administrer</Link>}
+          {kanAdministrere(sesjon) && <Link className="moc-lenke" to="/math-of-clans/admin">Administrer</Link>}
           <button type="button" className="moc-knapp-liten" onClick={() => void supabase.auth.signOut()}>
             Logg ut
           </button>
